@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+ PUBLIC " -//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+ "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+	<properties resource="datasource.properties"/>
+    <context id="mysql" targetRuntime="MyBatis3Simple">
+    	<property name="javaFileEncoding" value="UTF-8"/>
+    	<!-- 引入外部注释类 -->
+        <commentGenerator type="com.sunmnet.bigdata.web.MyCommentGenerator">
+        </commentGenerator>
+        <!-- 数据库连接 -->
+        <jdbcConnection driverClass="${statis.jdbc.driverClass}"
+                        connectionURL="${statis.jdbc.jdbcUrl}"
+                        userId="${statis.jdbc.username}"
+                        password="${statis.jdbc.password}"/>
+        <javaTypeResolver>
+        	<property name="forceBigDecimals" value="false"/>
+		</javaTypeResolver>
+		<!-- 生成model的位置 -->
+        <javaModelGenerator targetPackage="com.sunmnet.bigdata.web.model.entity.student"
+                            targetProject="src/main/java">
+            <!-- 生成构造方法 -->
+            <!-- <property name="constructorBased" value="true"/> -->
+            <!-- 继承该类 -->
+            <!-- <property name="rootClass" value=""/> -->
+            <property name="enableSubPackages" value="true"/>
+            <!-- string类型使用trim()方法 -->
+            <property name="trimStrings" value="false"/>
+        </javaModelGenerator>
+		<!-- 生成sql.xml的位置 -->
+        <sqlMapGenerator targetPackage="mybatis.mappers.statis.student"
+                         targetProject="src/main/resources">
+            <property name="enableSubPackages" value="true"/>
+        </sqlMapGenerator>
+		<!-- 生成mapper的位置 -->
+        <javaClientGenerator targetPackage="com.sunmnet.bigdata.web.mapper.student"
+                             targetProject="src/main/java" type="XMLMAPPER">
+            <property name="enableSubPackages" value="true"/>
+        </javaClientGenerator>
+        <!-- 生成表配置,一表一个table domainObjectName="User"-->
+        <!-- <table tableName="s_competition_awards"
+        	enableInsert="false"
+        	enableSelectByPrimaryKey="false"
+        	enableUpdateByPrimaryKey="false"
+        	enableDeleteByPrimaryKey="false">
+        </table> -->
+
+    </context>
+</generatorConfiguration>

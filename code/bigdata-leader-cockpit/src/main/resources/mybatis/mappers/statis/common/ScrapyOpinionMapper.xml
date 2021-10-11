@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.common.ScrapyOpinionMapper">
+  <resultMap id="ScrapyOpinion" type="com.sunmnet.bigdata.web.model.entity.common.ScrapyOpinion">
+    <result column="opinion_id" jdbcType="INTEGER" property="opinionId" />
+    <result column="opinion_type" jdbcType="VARCHAR" property="opinionType" />
+    <result column="title" jdbcType="VARCHAR" property="title" />
+    <result column="excerpt" jdbcType="VARCHAR" property="excerpt" />
+    <result column="source" jdbcType="VARCHAR" property="source" />
+    <result column="website" jdbcType="VARCHAR" property="website" />
+    <result column="publication_time" jdbcType="VARCHAR" property="publicationTime" />
+    <result column="pageviews" jdbcType="VARCHAR" property="pageviews" />
+    <result column="detailed_content" jdbcType="VARCHAR" property="detailedContent" />
+  </resultMap>
+  <!--舆情列表展示 -->
+  <select id="listOpinion" parameterType="ScrapyOpinionREQ" resultMap="ScrapyOpinion">
+    SELECT opinion_id ,opinion_type, title, excerpt, source, website, publication_time, pageviews
+    FROM c_scrapy_opinion
+    WHERE opinion_type=#{opinionType} ORDER BY publication_time DESC
+  </select>
+  <!-- 舆情详细信息 -->
+  <select id="getScrapyOpinion" parameterType="OpinionREQ" resultMap="ScrapyOpinion">
+    SELECT opinion_id , title, excerpt, source, website, publication_time, pageviews, detailed_content
+    FROM c_scrapy_opinion
+    WHERE opinion_id=#{opinionId}
+  </select>
+</mapper>

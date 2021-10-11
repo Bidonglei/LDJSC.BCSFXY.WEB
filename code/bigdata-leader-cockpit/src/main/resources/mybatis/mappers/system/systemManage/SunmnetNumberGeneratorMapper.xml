@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetNumberGeneratorDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetNumberGeneratorEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="number" property="number" jdbcType="BIGINT" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, number, create_time, last_modify_time
+    </sql>
+
+	<!--获取菜单编号信息 wm 2018-05-20 -->
+    <select id="getNumberGenerator" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_number_generator
+    </select>
+
+	<!--菜单编号加1 wm 2018-05-20 -->
+    <update id="updateNumberGenerator" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetNumberGeneratorEntity" >
+        update sunmnet_number_generator
+       		 set
+                number = number+1,
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+
+</mapper>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetSystemDictInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemDictInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="dict_type" property="dictType" jdbcType="VARCHAR" />
+        <result column="dict_name" property="dictName" jdbcType="VARCHAR" />
+        <result column="dict_key" property="dictKey" jdbcType="VARCHAR" />
+        <result column="dict_value" property="dictValue" jdbcType="VARCHAR" />
+        <result column="dict_describe" property="dictDescribe" jdbcType="LONGVARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, dict_type, dict_name, dict_key, dict_value, dict_describe, 
+        create_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_dict_info
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemDictInfoEntity" >
+        insert into sunmnet_system_dict_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="dictType != null" >
+                dict_type,
+            </if>
+            <if test="dictName != null" >
+                dict_name,
+            </if>
+            <if test="dictKey != null" >
+                dict_key,
+            </if>
+            <if test="dictValue != null" >
+                dict_value,
+            </if>
+            <if test="dictDescribe != null" >
+                dict_describe,
+            </if> 
+            <if test="createTime != null" >
+                create_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="dictType != null" >
+                #{dictType,jdbcType=VARCHAR},
+            </if>
+            <if test="dictName != null" >
+                #{dictName,jdbcType=VARCHAR},
+            </if>
+            <if test="dictKey != null" >
+                #{dictKey,jdbcType=VARCHAR},
+            </if>
+            <if test="dictValue != null" >
+                #{dictValue,jdbcType=VARCHAR},
+            </if>
+            <if test="dictDescribe != null" >
+                #{dictDescribe,jdbcType=LONGVARCHAR},
+            </if> 
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemDictInfoEntity" >
+        update sunmnet_system_dict_info
+        <set >
+            <if test="dictType != null" >
+                dict_type = #{dictType,jdbcType=VARCHAR},
+            </if>
+            <if test="dictName != null" >
+                dict_name = #{dictName,jdbcType=VARCHAR},
+            </if>
+            <if test="dictKey != null" >
+                dict_key = #{dictKey,jdbcType=VARCHAR},
+            </if>
+            <if test="dictValue != null" >
+                dict_value = #{dictValue,jdbcType=VARCHAR},
+            </if>
+            <if test="dictDescribe != null" >
+                dict_describe = #{dictDescribe,jdbcType=LONGVARCHAR},
+            </if> 
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_system_dict_info
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+    
+    <!--查询数据字典下拉框 2018-09-17 zfb-->     
+	<select id="queryDictDrpDown" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryDictDropDownModel" parameterType="java.lang.String" >
+        select 
+        dict_key as id, dict_value as dictName,id as connectId
+        from sunmnet_system_dict_info   
+        where dict_type =#{dictType,jdbcType=VARCHAR}
+        <if test="connectId!= null and connectId!=''">
+            and parent_id =#{connectId,jdbcType=VARCHAR}
+        </if>
+    </select>
+    
+     <!-- 分页查询字典  2018-09-17 zfb-->
+	<select id="queryDictPageRequest" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryDictPageRequest">
+		select 
+		<include refid="Base_Column_List"/>
+		from sunmnet_system_dict_info
+		where 1=1
+		<if test="dictType!= null and dictType!=''">
+				   and dict_type =#{dictType,jdbcType=VARCHAR}
+				</if>
+				<if test="dictName!= null and dictName!=''">
+				   and dict_name =#{dictName,jdbcType=VARCHAR}
+				</if>
+				<if test="sort !=null  and  sort!=''">
+			        order by ${sort} ${order}
+		        </if>
+		</select>
+	<!--根据dicttype查询数据字典 2018-09-17 fr-->     
+	<select id="queryDataDictionaryInfo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List"/>
+        from sunmnet_system_dict_info  
+        where dict_type  = #{dictType,jdbcType=VARCHAR}    
+    </select>
+	<!--按照字典标识和数据字典key值查询 2018-09-17 fr-->     
+	<select id="queryDataDictKey" resultMap="BaseResultMap" parameterType="java.util.Map" >
+        select 
+        <include refid="Base_Column_List"/>
+        from sunmnet_system_dict_info  
+        where dict_type  = #{dictType,jdbcType=VARCHAR}  and dict_key  =#{dictKey,jdbcType=VARCHAR}
+    </select>
+     <!--删除数据字典fr 2018-09-17-->
+    <delete id="deleteDataDictionaryByDictType" parameterType="java.lang.String" >
+        delete from sunmnet_system_dict_info
+        where dict_type = #{dictType,jdbcType=VARCHAR}
+    </delete>
+</mapper>

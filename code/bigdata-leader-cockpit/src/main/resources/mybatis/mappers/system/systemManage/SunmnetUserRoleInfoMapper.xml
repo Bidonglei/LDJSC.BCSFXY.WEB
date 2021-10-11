@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetUserRoleInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserRoleInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="user_no" property="userNo" jdbcType="VARCHAR" />
+        <result column="role_no" property="roleNo" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, user_no, role_no, create_time, last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_user_role_info
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserRoleInfoEntity" >
+        insert into sunmnet_user_role_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="userNo != null" >
+                user_no,
+            </if>
+            <if test="roleNo != null" >
+                role_no,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="userNo != null" >
+                #{userNo,jdbcType=VARCHAR},
+            </if>
+            <if test="roleNo != null" >
+                #{roleNo,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserRoleInfoEntity" >
+        update sunmnet_user_role_info
+        <set >
+            <if test="userNo != null" >
+                user_no = #{userNo,jdbcType=VARCHAR},
+            </if>
+            <if test="roleNo != null" >
+                role_no = #{roleNo,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_user_role_info
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+	<!--根据用户编号删除用户角色关联信息  wm 2018-04-07 -->
+    <delete id="deleteRoleInfoByUserNo" parameterType="java.lang.String" >
+        delete from sunmnet_user_role_info
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </delete>
+    
+    <!--根据用户编号查询用户角色信息  2018-04-04 zfb -->
+ 	<select id="findUserRoleInfoByUserNo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_user_role_info
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </select>
+	<!--根据角色编号查询角色授权的人数  2018-04-07 wm -->
+ 	<select id="findUserRoleInfoCount" resultType="java.lang.Long" parameterType="java.lang.String" >
+        select 
+          count(0)
+        from sunmnet_user_role_info
+          where role_no =  #{roleNo,jdbcType=VARCHAR}
+    </select>
+    
+    <resultMap id="BaseResultMapRoleList" type="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryUserRoleInfoModel" >
+        <result column="role_no" property="roleNo" jdbcType="VARCHAR" />
+        <result column="role_name" property="roleName" jdbcType="VARCHAR" />        
+    </resultMap>
+    <!--根据用户编号查询用户角色信息列表  2018-04-04 zfb -->
+ 	<select id="queryUserRoleInfo" resultMap="BaseResultMapRoleList" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryUserRoleInfoRequest" >
+        select role.role_no, role.role_name        
+        from sunmnet_user_role_info user left join sunmnet_role_info role on user.role_no=role.role_no
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </select>
+	
+	<!-- 用户批量授权角色批量删除 -->
+     <delete id="deleteBatchRole" parameterType="java.util.List">
+	    delete from sunmnet_user_role_info
+	    where 
+	     <foreach collection="list" item="item" index="index" separator="or">  
+	       (  
+	       user_no=#{item.userNo}
+	       )
+    	</foreach> 
+	 </delete> 
+	
+	<!-- 用户批量授权角色批量入库  wm 2018-07-11 -->
+    <insert id ="insertBatchRole" parameterType="java.util.List" >
+       insert into sunmnet_user_role_info
+       (user_no, role_no, create_time)
+       	values
+        <foreach collection ="list" item="item" index= "index" separator =",">
+            (
+            #{item.userNo},#{item.roleNo},#{item.createTime}
+            )
+        </foreach >
+     </insert >
+</mapper>

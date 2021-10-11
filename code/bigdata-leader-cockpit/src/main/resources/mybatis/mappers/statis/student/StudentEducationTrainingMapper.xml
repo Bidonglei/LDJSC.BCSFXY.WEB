@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.student.StudentEducationTrainingMapper">
+
+    <sql id="International_Exchange_Query">
+      <where>
+          <if test="annual !=null and annual !=''">
+              AND i.annual=#{annual}
+          </if>
+          <if test="educateGradation !=null and educateGradation !=''">
+              AND i.educate_gradation=#{educateGradation}
+          </if>
+          <if test="projectType !=null and projectType !=''">
+              AND i.project_type=#{projectType}
+          </if>
+      </where>
+    </sql>
+    <!--国际交流国家数目-->
+    <select id="interExchangeCountryTotal" resultType="int">
+        SELECT
+            COUNT(DISTINCT i.country) AS countryNum
+        FROM xs_student_international_exchange i
+        <include refid="International_Exchange_Query"/>
+    </select>
+    <!--国际交流人次-->
+    <select id="interExchangeTime" resultType="int">
+        SELECT
+          IFNULL(SUM(i.person_time),0)
+        FROM xs_student_international_exchange i
+        <include refid="International_Exchange_Query"/>
+    </select>
+
+    <resultMap id="interExchangeCountryMap" type="map">
+        <result column="country" jdbcType="VARCHAR" property="country" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="projectType" jdbcType="VARCHAR" property="projectType" />
+            <result column="personTime" jdbcType="VARCHAR" property="personTime" />
+        </collection>
+    </resultMap>
+    <!--国际交流具体国家-->
+    <select id="interExchangeCountry" resultMap="interExchangeCountryMap">
+        SELECT
+            i.project_type AS projectType,
+            i.country AS country,
+            i.person_time AS personTime
+        FROM xs_student_international_exchange i
+        <include refid="International_Exchange_Query"/>
+    </select>
+
+    <!--奖助学资金分布-->
+    <select id="annualScholarship" resultType="map">
+        <!--SELECT
+            annual AS annual, &#45;&#45; 年度
+            amount AS amount &#45;&#45; 金额
+        FROM xs_student_annual_scholarship
+        ORDER BY annual
+        LIMIT 5-->
+        SELECT annual,sum(amount) as amount
+        FROM xs_student_academy_scholarship
+        group by annual ORDER BY annual LIMIT 5
+    </select>
+
+    <resultMap id="academyScholarshipMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyShort" jdbcType="VARCHAR" property="academyShort" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--奖学金学院分布-->
+    <select id="academyScholarship" resultMap="academyScholarshipMap">
+        SELECT
+            academy_code AS academyCode, -- 学院编码
+            academy_short AS academyShort, -- 学院简称
+            academy_name AS academyName, -- 学院名称
+            student_type as studentType,
+            amount AS num -- 金额
+        FROM xs_student_academy_scholarship
+        WHERE annual = #{annual}
+        order by amount desc
+    </select>
+
+    <!--奖助学金培养层次详情-->
+    <select id="scholarshipDetail" resultType="map">
+        SELECT
+            scholarship_type AS scholarshipType, -- 奖学金类型编码
+            scholarship_type_name AS scholarshipTypeName, -- 奖学金名称
+            undergraduate_amount AS UndergraduateAmount, -- 本科生奖励金额：万元
+            undergraduate_number AS UndergraduateNumber, -- 本科生奖励学生数：人次
+            graduate_amount AS graduateAmount, -- 研究生奖励金额：万元
+            graduate_number AS graduateNumber -- 研究生奖励学生数：人次
+        FROM xs_student_scholarship_detail
+        WHERE annual = #{annual}
+    </select>
+
+    <!--奖助学金受助学生去向类型-->
+    <select id="whereaboutsType" resultType="map">
+        SELECT
+            whereabouts_type AS whereaboutsType, -- 去向类型
+            SUM(number) AS num -- 人数
+        FROM xs_student_scholarship_whereabouts
+        <where>
+            <if test="annual != null and annual != ''">
+                AND annual = #{annual}
+            </if>
+        </where>
+        GROUP BY whereabouts_type
+    </select>
+
+    <!--奖助学金受助学生去向详细类型-->
+    <select id="whereaboutsDetailType" resultType="map">
+        SELECT
+            detail_type AS detailType, -- 去向类型详细类型
+            number AS num -- 人数
+        FROM xs_student_scholarship_whereabouts
+        WHERE whereabouts_type='签约'
+        <if test="annual != null and annual != ''">
+            AND annual = #{annual}
+        </if>
+        order by number+0 desc
+    </select>
+
+    <!--奖学金，助学贷款，减免学费受益学生类别-->
+    <select id="profitStudent" resultType="map">
+        SELECT
+            poor_type AS poorType, -- 困难生类型
+            num AS num -- 人数
+        FROM
+            xs_aid_financially_student
+        WHERE
+            type = #{type} AND annual=#{annual}
+    </select>
+
+    <!--奖学金，助学贷款，减免学费受益学生总数-->
+    <select id="profitStudentTotal" resultType="int">
+        SELECT
+            IFNULL(SUM(num),0) AS total -- 总数
+        FROM
+            xs_aid_financially_student
+        WHERE
+            type = #{type} AND annual=#{annual}
+    </select>
+
+    <resultMap id="aidFinanciallyPartyMap" type="map">
+        <result column="type" jdbcType="VARCHAR" property="type" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="is_party" jdbcType="VARCHAR" property="isParty" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 党员获得奖助学金情况-->
+    <select id="aidFinanciallyParty"  resultMap="aidFinanciallyPartyMap">
+        SELECT
+            type AS type, -- 资助类型
+            is_party AS is_party, -- 是否党员
+            num AS num -- 人数
+        FROM
+            xs_aid_financially_party
+        WHERE annual=#{annual}
+    </select>
+
+    <!--学生获奖详情分页-->
+    <select id="awardDetailPage" resultType="map">
+         SELECT
+            student_name AS studentName, -- 姓名
+            student_no AS studentNo, -- 学号
+            academy_name AS academyName, -- 学院名称
+            competition_name AS competitionName, -- 比赛名称
+            event_type AS eventType, -- 赛事类别
+            event_level AS eventLevel, -- 赛事级别
+            award_level AS awardLevel, -- 获奖等级
+            award_date AS awardDate, -- 获奖时间
+            organize_company AS organizeCompany -- 主办单位
+        FROM
+            xs_student_award_detail
+        ORDER BY student_no DESC
+    </select>
+
+    <!--本科/研究生获奖-图例-->
+    <select id="getStudentAwardLegend" resultType="string">
+        SELECT concat(event_level,ifnull(award_level,'')) AS name
+        FROM xs_student_award_detail
+        WHERE educate_gradation=#{achieveType}
+        group by concat(event_level,ifnull(award_level,''))
+        order by (case event_level when '国际级' then 1 when '国家级' then 2
+        when '省部级' then 3 else 4 end),
+        (case award_level when '特等奖' then 0 when '一等奖' then 1
+        when '二等奖' then 2 when '三等奖' then 3 else 4 end)
+    </select>
+
+    <resultMap id="studentAwardMap" type="map">
+        <result column="awardCategory" jdbcType="VARCHAR" property="awardCategory" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="awardType" jdbcType="VARCHAR" property="awardType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 本科/研究生获奖-->
+    <select id="studentAward" resultMap="studentAwardMap">
+        <!--SELECT
+            award_category AS awardCategory, &#45;&#45; 奖品类别
+            award_type AS awardType, &#45;&#45; 获奖类型
+            number AS num &#45;&#45; 数量
+        FROM
+            xs_student_award
+        WHERE achieve_type=#{achieveType}-->
+        SELECT event_type as awardCategory,
+        concat(event_level,ifnull(award_level,'')) as awardType,count(1) as num
+        FROM xs_student_award_detail
+        WHERE educate_gradation=#{achieveType}
+        group by event_type,concat(event_level,award_level)
+    </select>
+
+    <resultMap id="academyAwardTotalMap" type="map">
+        <result column="academy_code" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academy_short" jdbcType="VARCHAR" property="academyShort" />
+        <result column="achieve_type" jdbcType="VARCHAR" property="achieveType" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list"  ofType="map" select="getAwardTypeByAcademyCode" column="{achieveType=achieve_type,academyCode=academy_code}">
+        </collection>
+    </resultMap>
+    <!--本科/研究生学院获奖总数-->
+    <select id="academyAward" resultMap="academyAwardTotalMap">
+        <!--SELECT
+            academy_code,
+            academy_short,
+            achieve_type,
+            SUM(number) AS num
+        FROM xs_student_award_academy
+        WHERE achieve_type=#{achieveType}
+        GROUP BY academy_code,academy_short-->
+        SELECT academy_code,academy_name as academy_short,
+        educate_gradation as achieve_type,count(1) as num
+        FROM xs_student_award_detail
+        WHERE educate_gradation=#{achieveType}
+        group by academy_code,academy_name,educate_gradation
+    </select>
+
+    <!--获取学院下各类奖数目-->
+    <select id="getAwardTypeByAcademyCode" resultType="java.util.Map">
+        <!--SELECT
+            award_type AS awardType,
+            number AS num
+        FROM xs_student_award_academy
+        WHERE achieve_type=#{achieveType} AND academy_code=#{academyCode}-->
+        SELECT event_level AS awardType,
+        count(1) AS num
+        FROM xs_student_award_detail
+        WHERE educate_gradation=#{achieveType} AND academy_code=#{academyCode}
+        group by event_level
+        UNION ALL
+        SELECT event_type AS awardType,
+        count(1) AS num
+        FROM xs_student_award_detail
+        WHERE educate_gradation=#{achieveType} AND academy_code=#{academyCode}
+        group by event_type
+    </select>
+
+    <!--本科/研究生学院获奖总数-图例-->
+    <select id="getAcademyAwardLegend" resultType="string">
+        select * from (SELECT event_level AS name
+        FROM xs_student_award_detail
+        WHERE educate_gradation=#{achieveType}
+        group by event_level
+        union all
+        SELECT event_type AS name
+        FROM xs_student_award_detail
+        where event_type in ('学科类','创业类') and educate_gradation=#{achieveType}
+        group by event_type) a
+        order by (case name when '国际级' then 1 when '国家级' then 2 when '省部级' then 3 else 9 end)
+    </select>
+
+    <!--人才培养-->
+    <select id="personnelTraining" resultType="map">
+        SELECT
+            school_year AS schoolYear, -- 学年
+            culture_learning AS cultureLearning, -- 文化、学术讲座总数
+            undergraduate_activity AS undergraduateActivity, -- 本科生课外科技、文化活动项目总数
+            country_plan_project AS countryPlanProject, -- 国家大学生创新创业训练计划项目总数
+            province_plan_project AS provincePlanProject -- 省部级大学生创新创业训练计划项目总数
+        FROM xs_personnel_training
+		ORDER BY school_year
+		LIMIT 5
+    </select>
+    <!--学生论文发表情况-->
+    <select id="publishPaper" resultType="map">
+        SELECT
+            CASE WHEN periodical_type='SCI' THEN 'SCI'
+                WHEN  periodical_type='SSCI' THEN 'SSCI'
+                WHEN  periodical_type='EI' THEN 'EI'
+                WHEN  periodical_type='CSCD' THEN 'CSCD'
+                WHEN  periodical_type='CSSCI' THEN 'CSSCI'
+                WHEN  periodical_type='ESIGB' THEN 'ESI高被引论文'
+                WHEN  periodical_type='ESIRD' THEN 'ESI热点论文'  END AS periodicalType, -- 期刊类型
+            CASE WHEN periodical_type='SCI' THEN 1
+                WHEN  periodical_type='SSCI' THEN 2
+                WHEN  periodical_type='EI' THEN 3
+                WHEN  periodical_type='CSCD' THEN 4
+                WHEN  periodical_type='CSSCI' THEN 5
+                WHEN  periodical_type='ESIGB' THEN 6
+                WHEN  periodical_type='ESIRD' THEN 7 END AS sort,
+            undergraduate_number AS undergraduateNumber, -- 本科生论文数目
+            master_number AS masterNumber -- 研究生论文数目
+        FROM xs_publish_paper
+        ORDER BY sort
+    </select>
+    <!--学生申请专利情况-->
+    <select id="applicationPatent" resultType="map">
+        SELECT
+            achieve_patent AS achievePatent, -- 获准专利
+            other AS other, -- 其他
+            total AS total -- 总数
+        FROM
+            xs_application_patent
+    </select>
+    <!--学生发表作品数-->
+    <select id="applicationWriting" resultType="map">
+        SELECT
+            school_year AS schoolYear, -- 学年
+            writing_number AS writingNumber -- 发表作品数目
+        FROM xs_application_writing
+        ORDER BY school_year DESC
+        LIMIT 3
+    </select>
+    <!--学生社团情况-->
+    <select id="association" resultType="map">
+        SELECT
+            school_year AS schoolYear, -- 学年
+            association_number AS associationNumber -- 社团数目
+        FROM xs_association
+        ORDER BY school_year DESC
+        LIMIT 3
+    </select>
+
+    <!--各学院学生出国情况-->
+    <select id="abroadInfo" resultType="map">
+        SELECT
+            academy_code AS academyCode, -- 学院代码
+            academy_name AS academyName, -- 学院名称
+            undergraduate_abroad AS undergraduateAbroad, -- 本科生出国人数
+            graduate_abroad AS graduateAbroad, -- 研究生出国人数
+			undergraduate_abroad+graduate_abroad AS total,
+            abroad_rate AS abroadRate, -- 学院学生出国占比
+            undergraduate_abroad_rate AS undergraduateAbroadRate, -- 本科生出国学生占比
+            graduate_abroad_rate AS graduateAbroadRate -- 研究生出国学生占比
+        FROM
+            xs_abroad_info
+        ORDER BY total DESC
+    </select>
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.common.ResourcesEquipmentFundsMapper">
+  <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.web.model.entity.common.ResourcesEquipmentFunds">
+    <result column="count_year" jdbcType="VARCHAR" property="countYear" />
+    <result column="equipment_funds" jdbcType="VARCHAR" property="equipmentFunds" />
+    <result column="new_year_funds" jdbcType="VARCHAR" property="newYearFunds" />
+  </resultMap>
+  <select id="listAll" resultMap="BaseResultMap">
+    select count_year, equipment_funds, new_year_funds
+    from c_resources_equipment_funds
+  </select>
+    <select id="listEquipmentFundsByYear" resultMap="BaseResultMap">
+      select count_year, equipment_funds, new_year_funds
+          from c_resources_equipment_funds WHERE count_year=left(#{year},4)
+    </select>
+    <select id="listEquipmentFundsByYears" resultMap="BaseResultMap">
+      select count_year, SUM(equipment_funds) equipment_funds, SUM(new_year_funds) new_year_funds
+          from c_resources_equipment_funds
+      WHERE count_year in
+      <foreach collection="years" item="year" open="(" separator="," close=")">
+        #{year}
+      </foreach>
+    </select>
+</mapper>

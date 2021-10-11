@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetUserInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserInfoEntity" >
+        <result column="user_no" property="userNo" jdbcType="VARCHAR" />
+        <result column="user_name" property="userName" jdbcType="VARCHAR" />
+        <result column="user_nickname" property="userNickname" jdbcType="VARCHAR" />
+        <result column="user_mobile" property="userMobile" jdbcType="VARCHAR" />
+        <result column="department_no" property="departmentNo" jdbcType="VARCHAR" />        
+        <result column="user_mail" property="userMail" jdbcType="VARCHAR" />
+        <result column="user_status" property="userStatus" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.UserStatusEnum" />
+        <result column="user_password" property="userPassword" jdbcType="VARCHAR" />
+        <result column="relation_type" property="relationType" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.RelationTypeEnum" />
+        <result column="relation_no" property="relationNo" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        user_no, user_name, user_nickname, user_mobile, department_no, user_mail, user_status, 
+        user_password, relation_type,relation_no,create_time, last_modify_time
+    </sql>
+
+	<!--根据用户编号查询用户信息  2018-03-20 wm -->
+ 	<select id="getUserInfoByUserNo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_user_info
+        where relation_no = #{userNo,jdbcType=VARCHAR}
+    </select>
+     
+    <!--根据手机号查询用户信息  2018-03-30 wm -->
+ 	<select id="getUserInfoByUserMobile" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_user_info
+        where user_mobile = #{userMobile,jdbcType=VARCHAR}
+    </select>
+    <!--根据关联编号查询用户信息   2018-04-28 wm -->
+ 	<select id="getUserInfoByrRelationNo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_user_info
+        	where relation_no = #{relationNo,jdbcType=VARCHAR}
+    </select>
+    
+    
+    
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserInfoEntity" >
+        insert into sunmnet_user_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="userNo != null" >
+                user_no,
+            </if>
+            <if test="userName != null" >
+                user_name,
+            </if>
+            <if test="userNickname != null" >
+                user_nickname,
+            </if>
+            <if test="userMobile != null" >
+                user_mobile,
+            </if>
+            <if test="departmentNo != null" >
+                department_no,
+            </if>
+            <if test="userMail != null" >
+                user_mail,
+            </if>
+            <if test="userStatus != null" >
+                user_status,
+            </if>
+            <if test="userPassword != null" >
+                user_password,
+            </if>
+            <if test="relationType != null" >
+                relation_type,
+            </if>
+            <if test="relationNo != null" >
+                relation_no,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="userNo != null" >
+                #{userNo,jdbcType=VARCHAR},
+            </if>
+            <if test="userName != null" >
+                #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="userNickname != null" >
+                #{userNickname,jdbcType=VARCHAR},
+            </if>
+            <if test="userMobile != null" >
+                #{userMobile,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentNo != null" >
+                #{departmentNo,jdbcType=VARCHAR},
+            </if>
+            <if test="userMail != null" >
+                #{userMail,jdbcType=VARCHAR},
+            </if>
+            <if test="userStatus != null" >
+                #{userStatus,javaType=UserStatusEnum},
+            </if>
+            <if test="userPassword != null" >
+                #{userPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="relationType != null" >
+                #{relationType,javaType=RelationTypeEnum},
+            </if>
+            <if test="relationNo != null" >
+                #{relationNo,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+
+    
+     <!--根据用户编号删除用户信息  2018-04-04 zfb -->
+    <delete id="deleteUserInfoByUserNo" parameterType="java.lang.String" >
+        delete from sunmnet_user_info
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </delete>
+    
+    <!--修改用户状态  2018-04-04 zfb -->
+     <update id="updateUserStatusByUserNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserInfoEntity" >
+        update sunmnet_user_info
+        <set >           
+            <if test="userStatus != null" >
+                user_status = #{userStatus,javaType=UserStatusEnum},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </update>
+    
+    <!--重置密码  2018-04-04 zfb -->
+     <update id="updateUserPasswordByUserNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserInfoEntity" >
+        update sunmnet_user_info
+        <set >           
+            <if test="userPassword != null" >
+                user_password = #{userPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </update>
+    
+     <resultMap id="BaseResultMapPageUserInfo" type="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryUserPageModel" >
+        <result column="user_no" property="userNo" jdbcType="VARCHAR" />
+        <result column="user_name" property="userName" jdbcType="VARCHAR" />
+        <result column="user_nickname" property="userNickName" jdbcType="VARCHAR" />
+        <result column="user_mobile" property="userMobile" jdbcType="VARCHAR" />
+        <result column="department_no" property="departmentNo" jdbcType="VARCHAR" />
+        <result column="department_name" property="departmentName" jdbcType="VARCHAR" />
+        <result column="user_mail" property="userMail" jdbcType="VARCHAR" />
+        <result column="user_status" property="userStatus" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.UserStatusEnum" />
+        <result column="relation_type" property="relationType" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.RelationTypeEnum" />
+        <result column="relation_no" property="relationNo" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+    
+     <!-- 综合条件查询用户信息批量授权 wm -->
+	<select id="findUserInfoBeath" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryUserInfoBeathRequest" resultMap="BaseResultMapPageUserInfo">
+	 
+	 select user.user_no,user.user_name,user.user_nickname,user.user_mobile,user.department_no,department.department_name,	        
+	        	user.user_mail,user.user_status,user.relation_type,user.relation_no,user.create_time,user.last_modify_time
+        from sunmnet_user_info user left join sunmnet_department_info department on user.department_no = department.department_no
+        where 1=1 
+        <if test="departmentNo != null and departmentNo!=''" >
+            and user.department_no = #{departmentNo,jdbcType=VARCHAR}             
+        </if>
+         <if test="userName != null and userName!=''" >
+            and user.user_name  LIKE CONCAT('%',#{userName,jdbcType=VARCHAR},'%' )
+        </if>
+        <if test="userMobile != null and userMobile!=''" >
+            and user.user_mobile  = #{userMobile,jdbcType=VARCHAR}
+        </if>
+        <if test="userStatus != null" >
+            and user.user_status = #{userStatus,javaType=UserStatusEnum}
+        </if>
+        <if test="relationType != null" >
+             and user.relation_type = #{relationType,javaType=RelationTypeEnum}
+        </if>
+        <if test="relationNo != null and relationNo!=''" >
+            and user.relation_no = #{relationNo,jdbcType=VARCHAR}
+        </if>
+        <if test="userNo != null and userNo!=''" >
+            and user.user_no = #{userNo,jdbcType=VARCHAR}
+        </if>
+        <if test="beginTime!=null and beginTime!='' and endTime!=null and endTime!=''">
+			and user.create_time <![CDATA[ >= ]]> #{beginTime,jdbcType=VARCHAR}
+			and user.create_time  <![CDATA[ <= ]]>  #{endTime,jdbcType=VARCHAR}
+		</if>
+    </select>
+    
+    
+    <!-- 综合条件查询用户信息 -->
+	<select id="findUserInfo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryUserInfoPageRequest" resultMap="BaseResultMapPageUserInfo">
+	 
+	 select user.user_no,user.user_name,user.user_nickname,user.user_mobile,user.department_no,department.department_name,	        
+	        	user.user_mail,user.user_status,user.relation_type,user.relation_no,user.create_time,user.last_modify_time
+        from sunmnet_user_info user left join sunmnet_department_info department on user.department_no = department.department_no
+        where 1=1 
+        <if test="departmentNo != null and departmentNo!=''" >
+            and user.department_no = #{departmentNo,jdbcType=VARCHAR}             
+        </if>
+         <if test="userName != null and userName!=''" >
+            and user.user_name  LIKE CONCAT('%',#{userName,jdbcType=VARCHAR},'%' )
+        </if>
+        <if test="userMobile != null and userMobile!=''" >
+            and user.user_mobile  = #{userMobile,jdbcType=VARCHAR}
+        </if>
+        <if test="userStatus != null" >
+            and user.user_status = #{userStatus,javaType=UserStatusEnum}
+        </if>
+        <if test="relationType != null" >
+             and user.relation_type = #{relationType,javaType=RelationTypeEnum}
+        </if>
+        <if test="relationNo != null and relationNo!=''" >
+            and user.relation_no = #{relationNo,jdbcType=VARCHAR}
+        </if>
+        <if test="userNo != null and userNo!=''" >
+            and user.user_no = #{userNo,jdbcType=VARCHAR}
+        </if>
+        <if test="beginTime!=null and beginTime!='' and endTime!=null and endTime!=''">
+			and user.create_time <![CDATA[ >= ]]> #{beginTime,jdbcType=VARCHAR}
+			and user.create_time  <![CDATA[ <= ]]>  #{endTime,jdbcType=VARCHAR}
+		</if>
+        <if test="sort !=null  and  sort!=''">
+			order by ${sort} ${order}
+		</if>
+    </select>
+    
+    <!--根据部门编号查询部门人数  2018-04-05 wm -->
+ 	<select id="getDepartmentUserNum" resultType="java.lang.Long" parameterType="java.lang.String" >
+        select 
+       	 count(0)
+        from sunmnet_user_info
+        where  department_no = #{departmentNo,jdbcType=VARCHAR} 
+    </select>
+    
+    <!--修改用户信息  2018-04-09 zfb -->
+     <update id="updateUserInfoByUserNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetUserInfoEntity" >
+        update sunmnet_user_info
+        <set >           
+            <if test="departmentNo != null" >
+                department_no = #{departmentNo,jdbcType=VARCHAR},
+            </if>
+            <if test="userName != null" >
+                user_name = #{userName,jdbcType=VARCHAR},
+            </if>
+             <if test="userNickname != null" >
+                user_nickname = #{userNickname,jdbcType=VARCHAR},
+            </if>
+            <if test="userMobile != null" >
+                user_mobile = #{userMobile,jdbcType=VARCHAR},
+            </if>
+            <if test="userMail != null" >
+                user_mail = #{userMail,jdbcType=VARCHAR},
+            </if>
+            <if test="relationType != null" >
+                relation_type = #{relationType,javaType=RelationTypeEnum},
+            </if>
+            <if test="relationNo != null" >
+                relation_no = #{relationNo,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where user_no = #{userNo,jdbcType=VARCHAR}
+    </update>
+
+
+	<!-- 批量入库教师分组信息 -->
+    <insert id ="insertBatchUserInfo" parameterType="java.util.List" >
+       insert into  sunmnet_user_info
+	       (user_no, user_name, user_nickname, user_mobile, department_no, 
+	       user_mail, user_status,  user_password, relation_type,relation_no,
+	       create_time, last_modify_time
+	    	)
+       	values
+        <foreach collection ="list" item="item" index= "index" separator =",">
+            (#{item.userNo},#{item.userName},#{item.userNickname},#{item.userMobile},#{item.departmentNo},
+			#{item.userMail},#{item.userStatus},#{item.userPassword},#{item.relationType},#{item.relationNo},
+			#{item.createTime},#{item.lastModifyTime}
+            )
+        </foreach >
+         ON DUPLICATE KEY UPDATE
+         user_name = VALUES(user_name),
+         user_mobile = VALUES(user_mobile),
+         user_mail = VALUES(user_mail),
+         department_no = VALUES(department_no),
+         last_modify_time = VALUES(last_modify_time),
+         user_mail = VALUES(user_mail),
+         user_mobile = VALUES(user_mobile)
+     </insert >
+</mapper>

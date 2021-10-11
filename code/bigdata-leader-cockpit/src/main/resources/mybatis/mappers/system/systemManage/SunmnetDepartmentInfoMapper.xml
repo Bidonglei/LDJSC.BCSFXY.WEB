@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetDepartmentInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetDepartmentInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="department_no" property="departmentNo" jdbcType="VARCHAR" />
+        <result column="department_name" property="departmentName" jdbcType="VARCHAR" />
+        <result column="department_describe" property="departmentDescribe" jdbcType="VARCHAR" />
+        <result column="department_status" property="departmentStatus" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.DepartmentStatusEnum" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, department_no, department_name, department_describe, department_status, create_time, 
+        last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_department_info
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+    
+    <resultMap id="BaseResultMapDropdown" type="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryDepartmentDropdownModel" >
+        <result column="department_no" property="departmentNo" jdbcType="VARCHAR" />
+        <result column="department_name" property="departmentName" jdbcType="VARCHAR" />
+    </resultMap>
+
+	<!--部门信息下拉框选择 2018-03-23 wm -->
+	<select id="queryDepartmentDropdown" resultMap="BaseResultMapDropdown" parameterType="java.lang.Long" >
+        select 
+        	department_no, department_name
+        from sunmnet_department_info
+        where department_status = 'NORMAL'
+    </select>
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetDepartmentInfoEntity" >
+        insert into sunmnet_department_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="departmentNo != null" >
+                department_no,
+            </if>
+            <if test="departmentName != null" >
+                department_name,
+            </if>
+            <if test="departmentDescribe != null" >
+                department_describe,
+            </if>
+            <if test="departmentStatus != null" >
+                department_status,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="departmentNo != null" >
+                #{departmentNo,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentName != null" >
+                #{departmentName,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentDescribe != null" >
+                #{departmentDescribe,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentStatus != null" >
+                #{departmentStatus,javaType=DepartmentStatusEnum},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetDepartmentInfoEntity" >
+        update sunmnet_department_info
+        <set >
+            <if test="departmentNo != null" >
+                department_no = #{departmentNo,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentName != null" >
+                department_name = #{departmentName,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentDescribe != null" >
+                department_describe = #{departmentDescribe,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentStatus != null" >
+                department_status = #{departmentStatus,javaType=DepartmentStatusEnum},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_department_info
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+    
+     <!--根据部门编号删除部门信息  2018-04-05 zfb -->
+    <delete id="deleteDepartmentInfoByDepartmentNo" parameterType="java.lang.String" >
+        delete from sunmnet_department_info
+        where department_no = #{departmentNo,jdbcType=VARCHAR}
+    </delete>
+    
+    <!--根据部门编号查询部门信息 2018-04-05 zfb-->
+	<select id="getDepartmentInfoByDepartmentNo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_department_info
+        where  department_no = #{departmentNo,jdbcType=VARCHAR}
+    </select>
+    
+    <!--修改部门状态  2018-04-04 zfb -->
+     <update id="updateDepartmentStatusByDepartmentNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetDepartmentInfoEntity" >
+        update sunmnet_department_info
+        <set >           
+            <if test="departmentStatus != null" >
+                department_status = #{departmentStatus,javaType=DepartmentStatusEnum},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where department_no = #{departmentNo,jdbcType=VARCHAR}
+    </update>
+    
+    <!-- 分页查询部门信息  2018-04-05 zfb-->
+	<select id="findDepartmentInfo" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryDepartmentInfoPageRequest">
+		select 
+		<include refid="Base_Column_List"/>
+		from sunmnet_department_info
+		where 1=1
+		<if test="departmentNo!= null and departmentNo!=''">
+				   and department_no =#{departmentNo,jdbcType=VARCHAR}
+				</if>
+				<if test="departmentStatus!=null">
+				   and department_status = #{departmentStatus,javaType=DepartmentStatusEnum}
+				</if>
+				<if test="beginTime!=null and beginTime!=''">
+				    and create_time <![CDATA[ >= ]]> #{beginTime,jdbcType=VARCHAR}
+				</if>
+				<if test="endTime!=null and endTime!=''">
+				    and create_time  <![CDATA[ <= ]]>  #{endTime,jdbcType=VARCHAR}
+				</if>	
+				<if test="sort !=null  and  sort!=''">
+			        order by ${sort} ${order}
+		        </if>
+		</select>
+		 <!--修改部门信息  2018-04-09 zfb -->
+     <update id="updateDepartmentInfoByDepartmentNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetDepartmentInfoEntity" >
+        update sunmnet_department_info
+        <set >           
+            <if test="departmentName != null" >
+                department_name = #{departmentName,jdbcType=VARCHAR},
+            </if>
+            <if test="departmentDescribe != null" >
+                department_describe = #{departmentDescribe,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where department_no = #{departmentNo,jdbcType=VARCHAR}
+    </update>
+    
+    <!--根据部门编号名称查询部门信息 2018-05-20 zfb-->
+	<select id="getDepartmentInfoByName" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_department_info
+        where  department_name = #{departmentName,jdbcType=VARCHAR}
+    </select>
+
+</mapper>

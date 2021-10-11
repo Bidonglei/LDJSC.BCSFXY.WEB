@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.science.ScienceResourceMapper">
+
+    <!--国家级科研专家分页-->
+    <select id="researchExpertPage" resultType="map">
+        SELECT
+            name, -- 姓名
+            type, -- 类别：规划论证专家、指南编制专家、评审专家
+            company, -- 工作单位
+            major_direction AS majorDirection, -- 专业方向
+            profile -- 简介
+        FROM ky_country_research_expert
+        <where>
+            <if test="name != null and name!=''" >
+                AND name LIKE CONCAT('%', #{name},'%')
+            </if>
+            <if test="type != null and type!=''" >
+                AND type = #{type}
+            </if>
+            <if test="company != null and company!=''" >
+                AND company LIKE CONCAT('%', #{company},'%')
+            </if>
+            <if test="majorDirection != null and majorDirection!=''" >
+                AND major_direction =#{majorDirection}
+            </if>
+        </where>
+    </select>
+
+
+    <!--科研职称分布-->
+    <select id="researchTitleDis" resultType="map">
+        <!--select title,company,sum(num) as num from (
+        SELECT
+        title, &#45;&#45; 职称
+        if(COUNT(1)>10,company,'其他') as company, &#45;&#45; 科研单位
+        COUNT(1) AS num &#45;&#45; 人数
+        FROM ky_science_project_person
+        GROUP BY title,company
+        ) a group by title,company
+        order by (case title when '正高' then 1
+        when '副高' then 2
+        when '中级' then 3
+        when '初级' then 4 else 5 end),num desc-->
+        select a.title,if(b.num is null,'其他',a.company) as company,sum(a.num) as num from (
+        SELECT title,company,COUNT(1) AS num
+        FROM ky_science_project_person
+        GROUP BY title,company) a
+        left join
+        (select company,count(1) as num
+        from ky_science_project_person
+        where company is not null
+        group by company
+        order by num desc limit 20) b on a.company=b.company
+        group by a.title,if(b.num is null,'其他',a.company)
+        order by (case a.title when '正高' then 1
+        when '副高' then 2
+        when '中级' then 3
+        when '初级' then 4 else 5 end),num desc
+    </select>
+
+    <!--科研学历分布-->
+    <select id="researchEducationDis" resultType="map">
+        select REPLACE(a.education,'毕业','') as education,if(b.num is null,'其他',a.company) as company,sum(a.num) as num from (
+        SELECT education,company,COUNT(1) AS num
+        FROM ky_science_project_person
+        GROUP BY education,company) a
+        left join
+        (select company,count(1) as num
+        from ky_science_project_person
+        where company is not null
+        group by company
+        order by num desc limit 20) b on a.company=b.company
+        group by a.education,if(b.num is null,'其他',a.company)
+        order by (case education when '博士研究生毕业' then 1
+        when '硕士研究生毕业' then 2
+        when '大学本科毕业' then 3
+        when '大学专科毕业' then 4
+        when '普通高中毕业' then 5 else 6 end),num desc
+    </select>
+
+    <!--科研项目人员分页-->
+    <select id="projectPersonPage" resultType="map">
+        SELECT
+            person_no AS personNo, -- 科研人员工号
+            person_name AS personName, -- 科研人员姓名
+            title AS title, -- 职称
+            education AS education, -- 学历
+            research_direction AS researchDirection, -- 研究方向
+            one_subject AS oneSubject, -- 一级学科
+            company AS company, -- 所在单位
+            participation_project AS participationProject -- 参与科研项目名称
+        FROM
+          ky_science_project_person
+        <where>
+            <if test="personName != null and personName!=''" >
+                AND (person_name like concat('%',#{personName},'%') or person_no like concat('%',#{personName},'%'))
+            </if>
+            <if test="researchDirection != null and researchDirection!=''" >
+                AND research_direction = #{researchDirection}
+            </if>
+            <if test="oneSubject != null and oneSubject!=''" >
+                AND one_subject = #{oneSubject}
+            </if>
+            <if test="company != null and company!=''" >
+                AND company = #{company}
+            </if>
+        </where>
+    </select>
+
+    <!--科研团队分页-->
+    <select id="scienceTeamPage" resultType="map">
+        SELECT
+            team_no AS teamNo, -- 团队编号
+            team_name AS teamName, -- 团队名称
+            type AS type, -- 团队类别
+            region AS region, -- 领域
+            research_direction AS researchDirection, -- 研究方向
+            lead_company AS leadCompany, -- 牵头单位名称
+            depend_platform AS dependPlatform -- 依托平台
+        FROM
+          ky_science_team_info
+        <where>
+            <if test="teamName != null and teamName!=''" >
+                AND team_name LIKE CONCAT('%', #{teamName},'%')
+            </if>
+            <if test="type != null and type!=''" >
+                AND type = #{type}
+            </if>
+            <if test="region != null and region!=''" >
+                AND region = #{region}
+            </if>
+            <if test="researchDirection != null and researchDirection!=''" >
+                AND research_direction = #{researchDirection}
+            </if>
+        </where>
+    </select>
+    <!--团队基本信息-->
+    <select id="getTeamInfo" resultType="map">
+        SELECT
+            team_no AS teamNo, -- 团队编号
+            team_name AS teamName, -- 团队名称
+            subject_name AS subjectName, -- 学科名称
+            type AS type, -- 团队类别
+            region AS region, -- 领域
+            research_direction AS researchDirection, -- 研究方向
+            lead_company AS leadCompany, -- 牵头单位名称
+            form_company AS formCompany, -- 组成单位名称
+            contact_name AS contactName, -- 联系人姓名
+            contact_phone AS contactPhone, -- 联系人手机号码
+            depend_platform AS dependPlatform -- 依托平台
+        FROM
+          ky_science_team_info
+        WHERE team_no = #{teamNo}
+    </select>
+    <!--团队带头人信息 left-INNER-->
+    <select id="getLeadPersonInfo" resultType="map">
+        SELECT
+            person_name AS personName, -- 人员姓名
+            sex AS sex, -- 性别
+            birthday AS birthday, -- 出生日期
+            technology_job AS technologyJob, -- 专业技术职务
+            job AS job, -- 行政职务
+            research_direction AS researchDirection, -- 从事专业
+            company AS company -- 所在单位
+        FROM ky_team_core_person c
+        INNER JOIN ky_science_project_person p ON c.person_no = p.person_no
+        WHERE c.team_no = #{teamNo} AND c.is_lead='1'
+    </select>
+    <!--团队核心人员 left-INNER-->
+    <select id="getCorePersonInfo" resultType="map">
+        SELECT
+            person_name AS personName, -- 人员姓名
+            sex AS sex, -- 性别
+            education AS education, -- 学历
+            degree AS degree, -- 学位
+            title AS title, -- 职称
+            job AS job, -- 职务
+            research_direction AS researchDirection, -- 从事专业或研究方向
+            company AS company -- 所在单位
+        FROM ky_team_core_person c
+        INNER JOIN ky_science_project_person p ON c.person_no = p.person_no
+        WHERE c.team_no = #{teamNo} AND c.is_lead!='1'
+    </select>
+
+    <!--团队依托平台-->
+    <select id="getPlatformInfo" resultType="map">
+        SELECT
+            platform_name AS platformName, -- 平台名称
+            level AS level, -- 级别：国家级，省级
+            project_type AS projectType, -- 项目类别
+            belong_company AS belongCompany, -- 归属单位
+            approval_department AS approvalDepartment, -- 批准部门
+            agree_time AS agreeTime -- 批准日期
+        FROM ky_team_depend_platform d
+        LEFT JOIN ky_science_platform_info p ON d.platform_no = p.platform_no
+        WHERE team_no = #{teamNo}
+    </select>
+
+    <!--科研单位科研平台数量-->
+    <select id="companyPlatformAmount" resultType="map">
+        SELECT
+            project_company_code AS companyCode, -- 项目所属科研单位代码
+            project_company_name AS companyName, -- 项目所属科研单位名称
+            country_nun AS countryNun, -- 国家及实验室数量
+            province_nun AS provinceNun -- 省部及实验室数量
+        FROM
+            ky_company_platform_amount
+        order by country_nun desc,province_nun desc
+    </select>
+
+    <!--学科科研平台数量-->
+    <select id="subjectPlatformAmount" resultType="map">
+        SELECT
+            subject_code AS subjectCode, -- 学科编号
+            subject_name AS subjectName, -- 学科方向名称
+            country_nun AS countryNun, -- 国家及实验室数量
+            province_nun AS provinceNun -- 省部及实验室数量
+        FROM
+            ky_subject_platform_amount
+        order by country_nun desc,province_nun desc
+    </select>
+
+    <!--各单位科研平台分页-->
+    <select id="sciencePlatformInfo" resultType="map">
+        SELECT
+            platform_name AS platformName, -- 平台名称
+            level AS level, -- 级别：国家级，省级
+            approval_time AS approvalTime, -- 审批时间
+            subject AS subject, -- 学科
+            depend_company AS dependCompany, -- 依托单位
+            manage_department AS manageDepartment, -- 管理部门
+            director_name AS directorName, -- 主任姓名
+            type AS type -- 类型
+        FROM
+            ky_science_platform_info
+        <where>
+            <if test="platformName != null and platformName!=''" >
+                AND platform_name LIKE CONCAT('%', #{platformName},'%')
+            </if>
+            <if test="level != null and level!=''" >
+                AND level = #{level}
+            </if>
+            <if test="subject != null and subject!=''" >
+                AND subject LIKE CONCAT('%', #{subject},'%')
+            </if>
+            <if test="dependCompany != null and dependCompany!=''" >
+                AND depend_company LIKE CONCAT('%', #{dependCompany},'%')
+            </if>
+        </where>
+        order by level,approval_time desc
+    </select>
+
+    <!--国际合作基地分页-->
+    <select id="internationalCooBase" resultType="map">
+        SELECT
+            base_name AS baseName, -- 基地名称
+            level AS level, -- 级别：国家级，省级，校级，教育部111引智基地
+            confirm_date AS confirmDate, -- 认定时间
+            china_charge AS chinaCharge, -- 中方负责人
+            academy_name AS academyName, -- 学院名称
+            cooperation_country AS cooperationCountry, -- 合作国别
+            cooperation_continent AS cooperationContinent, -- 合作洲别
+            cooperation_company AS cooperationCompany, -- 合作机构
+            foreign_charge AS foreignCharge -- 外方负责人
+        FROM
+            ky_international_cooperation_base
+        <where>
+            <if test="baseName != null and baseName!=''" >
+                AND base_name LIKE CONCAT('%', #{baseName},'%')
+            </if>
+            <if test="academyName != null and academyName!=''" >
+                AND academy_name = #{academyName}
+            </if>
+            <if test="cooperationCountry != null and cooperationCountry!=''" >
+                AND cooperation_country = #{cooperationCountry}
+            </if>
+            <if test="cooperationContinent != null and cooperationContinent!=''" >
+                AND cooperation_continent = #{cooperationContinent}
+            </if>
+        </where>
+        order by level,confirm_date desc
+    </select>
+
+    <!--科研仪器设备共享机时-->
+    <select id="equipmentShareTime" resultType="map">
+        SELECT
+            academy_code AS academyCode, -- 单位代码
+            academy_name AS academyName, -- 单位名称
+            out_school AS outSchool, -- 校外共享机时
+            in_school AS inSchool, -- 校内共享机时
+            in_school + out_school AS total -- 总计
+        FROM
+            ky_equipment_share_time
+        WHERE annual = #{annual}
+		ORDER BY total DESC
+    </select>
+
+    <!--科研仪器设备共享收益-->
+    <select id="equipmentShareIncome" resultType="map">
+        SELECT
+            academy_code AS academyCode, -- 单位代码
+            academy_name AS academyName, -- 单位名称
+            out_school_income AS outSchoolIncome, -- 校外共享收益
+            in_school_income AS inSchoolIncome, -- 校内共享收益
+            maintenance_fee AS maintenanceFee, -- 用于维护费用
+            in_school_income + out_school_income AS totalIncome -- 收益总计
+        FROM
+            ky_equipment_share_income
+        WHERE annual = #{annual}
+		ORDER BY totalIncome DESC
+    </select>
+
+    <!--科研仪器共享中心分页-->
+    <select id="equipmentShareCenterPage" resultType="map">
+        SELECT
+            share_center_name AS shareCenterName, -- 共享中心名称
+            annual AS annual, -- 年份
+            type AS type, -- 共享类型
+            share_time AS shareTime, -- 共享机时
+            share_profit AS shareProfit, -- 共享收益
+            maintenance_fee AS maintenanceFee -- 收益中用于维护的费用
+        FROM
+            ky_equipment_share_center
+        <where>
+            <if test="shareCenterName != null and shareCenterName!=''" >
+                AND share_center_name LIKE CONCAT('%',#{shareCenterName},'%')
+            </if>
+            <if test="annual != null and annual!=''" >
+                AND annual = #{annual}
+            </if>
+            <if test="type != null and type!=''" >
+                AND type = #{type}
+            </if>
+        </where>
+    </select>
+</mapper>

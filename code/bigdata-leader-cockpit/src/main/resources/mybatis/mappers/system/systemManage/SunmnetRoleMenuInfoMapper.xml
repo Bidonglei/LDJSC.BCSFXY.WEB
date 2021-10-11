@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetRoleMenuInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetRoleMenuInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="role_no" property="roleNo" jdbcType="VARCHAR" />
+        <result column="menu_no" property="menuNo" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, role_no, menu_no, create_time, last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_role_menu_info
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+	<!--根据菜单编号查询菜单授权给角色的数 wm 2018-04-08 -->
+	<select id="getRoleMenuCountByMenuNo" resultType="java.lang.Long" parameterType="java.lang.String" >
+        select 
+        count(0)
+        from sunmnet_role_menu_info
+        where  menu_no = #{menuNo,jdbcType=VARCHAR}
+    </select>
+	<!--根据角色编号查询角色拥有的菜单、功能点编号集合 wm 2018-04-08 -->
+	<select id="getRoleMenuCountByRoleNo" resultType="java.lang.String" parameterType="java.lang.String" >
+        select 
+        	menu_no
+        from sunmnet_role_menu_info
+        where  role_no = #{roleNo,jdbcType=VARCHAR}
+    </select>
+
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetRoleMenuInfoEntity" >
+        insert into sunmnet_role_menu_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="roleNo != null" >
+                role_no,
+            </if>
+            <if test="menuNo != null" >
+                menu_no,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="roleNo != null" >
+                #{roleNo,jdbcType=VARCHAR},
+            </if>
+            <if test="menuNo != null" >
+                #{menuNo,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetRoleMenuInfoEntity" >
+        update sunmnet_role_menu_info
+        <set >
+            <if test="roleNo != null" >
+                role_no = #{roleNo,jdbcType=VARCHAR},
+            </if>
+            <if test="menuNo != null" >
+                menu_no = #{menuNo,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_role_menu_info
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+
+	<!--根据角色编号删除原有的已经授权了菜单功能点 wm 2018-04-08 -->
+	<delete id="deleteRoleMenuInfoByRoleNo" parameterType="java.lang.String" >
+        delete from sunmnet_role_menu_info
+        where role_no = #{roleNo,jdbcType=VARCHAR}
+    </delete>
+
+
+</mapper>

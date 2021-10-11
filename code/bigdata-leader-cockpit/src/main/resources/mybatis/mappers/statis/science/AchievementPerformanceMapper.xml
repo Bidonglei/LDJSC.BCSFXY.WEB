@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.science.AchievementPerformanceMapper">
+
+    <!--近五年ESI综合排名及ESI论文数变化趋势-->
+    <select id="esiRankingPapers" resultType="map">
+        SELECT
+            year AS year, -- 年份
+            ranking AS ranking, -- ESI综合排名
+            papers AS papers -- ESI论文数
+        FROM
+            ky_esi_ranking_papers
+        ORDER BY year
+    </select>
+
+    <!--近五年ESI高被引论文/热点论文变化趋势-->
+    <select id="esiCitedHotspot" resultType="map">
+        SELECT
+            year AS year, -- 年份
+            highly_cited AS highlyCited, -- ESI高被引论文
+            hotspot AS hotspot -- ESI热点论文
+        FROM
+            ky_esi_cited_hotspot
+        ORDER BY year
+    </select>
+
+    <!--ESI学科各高校排名对比-->
+    <select id="esiRankContrast" resultType="map">
+        SELECT
+            university AS university, -- 学校名称
+            subject_number AS subjectNumber, -- 学科数
+            thesis_number AS thesisNumber, -- 论文总数
+            reference_number AS referenceNumber, -- 引用次数
+            avg_reference_number AS avgReferenceNumber, -- 篇均引用
+            often_reference_number AS oftenReferenceNumber -- 高被引用论文数
+        FROM
+            ky_esi_rank_contrast
+    </select>
+
+    <!--我校进入ESI的学科及排名-->
+    <select id="esiSubjectRank" resultType="map">
+        SELECT
+            subject_name AS subjectName, -- 学科名称
+            list_organization AS listOrganization, -- 上榜机构数量
+            rankings AS rankings, -- 西工大排名
+            relative_ranking AS relativeRanking, -- 相对排名
+            thesis_number AS thesisNumber, -- 论文总数
+            reference_number AS referenceNumber, -- 总被引频次
+            avg_reference_number AS avgReferenceNumber, -- 篇均被引频次
+            last_rankings AS lastRankings, -- 上期排名
+            last_date AS lastDate, -- 上期排名日期
+            ranking_change AS rankingChange -- 排名变动位次(较去年)分正负
+        FROM
+            ky_esi_subject_rank
+-- 		ORDER BY rankings
+    </select>
+
+    <!--我校各学科ESI差距分析-->
+    <select id="esiPotentialSubject" resultType="map">
+        SELECT
+            subject_name AS subjectName, -- 学科名称
+            threshold_value AS thresholdValue, -- esi门槛值
+            school_reference AS schoolReference, -- 我校scie总被引频次
+            absolute_gap AS absoluteGap, -- 与esi绝对差值
+            relative_gap AS relativeGap -- 与esi相对差值
+        FROM
+            ky_esi_potential_subject
+    </select>
+
+    <!--科研机构专利数量-->
+    <select id="patentNum" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            apply_number AS applyNumber, -- 申请数目
+            grant_number AS grantNumber, -- 授权数目
+            invent_number AS inventNumber -- 转化数目
+        FROM
+            ky_patents_info
+        order by grant_number desc,apply_number desc
+    </select>
+
+    <!--专利申请数TOP5-->
+    <select id="applyNum" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            apply_number AS applyNumber -- 申请数目
+        FROM
+            ky_patents_info
+        ORDER BY apply_number DESC
+        LIMIT 5
+    </select>
+
+    <!--专利授权数TOP5-->
+    <select id="grantNum" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            grant_number AS grantNumber -- 授权数目
+        FROM
+            ky_patents_info
+        ORDER BY grant_number DESC
+        LIMIT 5
+    </select>
+
+    <!--专利转化件数TOP5-->
+    <select id="inventNum" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            invent_number AS inventNumber -- 转化数目
+        FROM
+            ky_patents_info
+        where invent_number!=0
+        ORDER BY invent_number DESC
+        LIMIT 5
+    </select>
+
+    <!--科研机构专利转让信息-->
+    <select id="patentTransferAmount" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            sell_money AS sellMoney, -- 出售总金额
+            real_income AS realIncome, -- 实际收入金额
+            contract_number AS contractNumber -- 专利出售合同数
+        FROM
+            ky_patents_transfer
+        order by sell_money desc,real_income desc
+    </select>
+
+    <!--出售总金额TOP5-->
+    <select id="sellAmount" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            sell_money AS sellMoney -- 出售总金额
+        FROM
+            ky_patents_transfer
+        ORDER BY sell_money DESC
+        LIMIT 5
+    </select>
+
+    <!--实际收入金额TOP5-->
+    <select id="realAmount" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            real_income AS realIncome -- 实际收入金额
+        FROM
+            ky_patents_transfer
+        ORDER BY realIncome DESC
+        LIMIT 5
+    </select>
+
+    <!--专利转让合同数TOP5-->
+    <select id="contractNum" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            contract_number AS contractNumber -- 专利出售合同数
+        FROM
+            ky_patents_transfer
+        ORDER BY contract_number DESC
+        LIMIT 5
+    </select>
+
+    <!--发表论文数量-->
+    <select id="publishThesis" resultType="map">
+        SELECT
+            department_code AS departmentCode, -- 科研机构代码
+            department_name AS departmentName, -- 科研机构
+            number AS num -- 篇数
+        FROM
+            ky_publish_thesis
+        WHERE type= #{type}
+        order by number desc
+    </select>
+    <!--近五年SCI论文发表-->
+    <select id="thesisSCI" resultType="map">
+        SELECT
+            year AS year, -- 年份
+            one_area AS oneArea, -- 一区篇数
+            two_area AS twoArea, -- 二区篇数
+            other AS other -- 其他篇数
+        FROM
+            ky_sci_thesis
+        ORDER BY year
+    </select>
+    <!--近五年SSCI论文发表-->
+    <select id="thesisSSCI" resultType="map">
+        SELECT
+            year AS year, -- 年份
+            first_quarter AS Q1, -- 一季度篇数
+            second_quarter AS Q2, -- 二季度篇数
+            third_quarter AS Q3, -- 三季度篇数
+            fourth_quarter AS Q4 -- 四季度篇数
+        FROM
+            ky_ssci_thesis
+        ORDER BY year
+    </select>
+
+    <!--专著分布-->
+    <select id="monographDepNum" resultType="map">
+            SELECT
+                department_name AS departmentName, -- 科研机构
+                COUNT(*) AS num -- 数量
+            FROM
+                ky_monograph_info
+            GROUP BY
+                department_name
+    </select>
+    <!--专著数量TOP5科研机构-->
+    <select id="monographDepTopFive" resultType="map">
+        SELECT
+            department_name AS departmentName, -- 科研机构
+            COUNT(*) AS num -- 数量
+        FROM
+            ky_monograph_info
+        GROUP BY
+            department_name
+        ORDER BY num DESC
+--         LIMIT 5  需求变更去掉
+    </select>
+    <!--专著详情-->
+    <select id="monographInfo" resultType="map">
+        SELECT
+            monograph_name AS monographName, -- 专著名称
+            publish_name AS publishName, -- 出版社名称
+            author AS author, -- 第一作者
+            department_name AS departmentName, -- 科研机构
+            monograph_no AS monographNo, -- 书号
+            publication_date AS publicationDate -- 出版时间
+        FROM
+            ky_monograph_info
+        order by publication_date desc
+    </select>
+</mapper>

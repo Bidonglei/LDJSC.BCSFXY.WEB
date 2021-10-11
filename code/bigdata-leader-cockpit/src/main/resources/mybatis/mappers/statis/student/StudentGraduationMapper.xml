@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.student.StudentGraduationMapper">
+
+    <!--学院就业分析-->
+    <select id="listAcademyGraduation" parameterType="com.sunmnet.bigdata.web.model.request.student.GradationREQ" resultType="java.util.Map">
+        select academy_short as name,
+        count(if(graduate_to='签约',1,null)) as signing,
+        count(if(graduate_to='升学',1,null)) as goSchool,
+        count(if(graduate_to='出国（境）',1,null)) as goAbroad,
+        count(if(graduate_to='暂缓就业',1,null)) as postponeEmployment,
+        count(if(graduate_to='未知',1,null)) as other,
+        count(1) as num,
+        count(if(is_employment='1',1,null))/count(1)*100 as employmentRate
+        from xs_student_graduation
+        <where>
+            <if test="graduateYear != null and graduateYear != ''">
+                and graduate_year=#{graduateYear}
+            </if>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+        </where>
+        group by academy_short
+        order by num DESC
+    </select>
+    <!--毕业生去向-->
+    <select id="listStudentGraduateTo" parameterType="com.sunmnet.bigdata.web.model.request.student.GradationREQ" resultType="java.util.Map">
+        select graduate_to as name,count(1) as value
+        from xs_student_graduation
+        <where>
+            <if test="graduateYear != null and graduateYear != ''">
+                and graduate_year=#{graduateYear}
+            </if>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+            <if test="academyCode != null and academyCode != ''">
+                and academy_code=#{academyCode}
+            </if>
+        </where>
+        group by graduate_to order by (case graduate_to when '未知' then 2 else 1 end)
+    </select>
+    <!--就业行业分布情况-->
+    <select id="listStudentCompanyType" parameterType="com.sunmnet.bigdata.web.model.request.student.GradationREQ" resultType="java.util.Map">
+        select company_type as name,count(1) as value
+        from xs_student_graduation
+        <where>
+            and graduate_to='签约'
+            <if test="graduateYear != null and graduateYear != ''">
+                and graduate_year=#{graduateYear}
+            </if>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+            <if test="academyCode != null and academyCode != ''">
+                and academy_code=#{academyCode}
+            </if>
+        </where>
+        group by company_type order by (case company_type when '未知' then 2 else 1 end)
+    </select>
+    <!--签约单位地域分布-->
+    <select id="listStudentWorkingArea" parameterType="com.sunmnet.bigdata.web.model.request.student.GradationREQ" resultType="java.util.Map">
+        select working_area as name,count(1) as value
+        from xs_student_graduation
+        <where>
+            and graduate_to='签约'
+            <if test="graduateYear != null and graduateYear != ''">
+                and graduate_year=#{graduateYear}
+            </if>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+            <if test="academyCode != null and academyCode != ''">
+                and academy_code=#{academyCode}
+            </if>
+        </where>
+        group by working_area order by (case working_area when '未知' then 2 else 1 end)
+    </select>
+    <!--近五年毕业生就业趋势-->
+    <select id="listGraduateToFiveYear" resultType="java.util.Map">
+        select graduate_year as name,round(sum(if(is_employment='1',1,0))/count(1)*100,2) as school,
+        round(sum(if(is_employment='1' and educate_gradation='本科',1,0))/sum(if(educate_gradation='本科',1,0))*100,2) as undergraduate,
+        round(sum(if(is_employment='1' and educate_gradation='硕士',1,0))/sum(if(educate_gradation='硕士',1,0))*100,2) as master,
+        round(sum(if(is_employment='1' and educate_gradation='博士',1,0))/sum(if(educate_gradation='博士',1,0))*100,2) as doctor
+        from xs_student_graduation
+        group by graduate_year limit 5
+    </select>
+</mapper>

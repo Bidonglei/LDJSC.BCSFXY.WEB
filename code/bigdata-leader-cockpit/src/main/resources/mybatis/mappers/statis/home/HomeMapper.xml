@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.home.HomeMapper">
+
+    <select id="listIndexHomePage" resultType="java.util.Map">
+        select b.index_name as indexName,
+            b.index_value as indexValue,
+            b.index_unit as indexUnit,
+            GROUP_CONCAT(c.description order by c.index_sort) as description,
+            a.left_right as leftRight,
+            a.rolling_mark as rollingMark,
+            a.index_rolling_two as indexRollingTwo
+        from sunmnet_manage.index_homepage_info a
+        inner join sunmnet_manage.index_basic_info b on a.index_code=b.index_code
+        left join
+        (select a.index_code,a.parent_index_code,a.index_sort,
+            concat(b.index_name,
+        (case when b.index_value='--' then '--'
+        when b.index_unit='万元' or b.index_unit='%' then FORMAT(b.index_value,2)
+        else FORMAT(b.index_value,0) end),b.index_unit) as description
+        from sunmnet_manage.index_homepage_info a
+        inner join sunmnet_manage.index_basic_info b on a.index_code=b.index_code
+        where a.index_level='TWO') c on a.index_code=c.parent_index_code
+        where a.index_level='ONE' group by a.index_code order by a.index_sort
+    </select>
+
+
+
+</mapper>

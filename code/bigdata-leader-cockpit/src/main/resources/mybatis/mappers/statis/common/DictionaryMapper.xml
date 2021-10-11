@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.common.DictionaryMapper">
+
+    <!--获取字典项-->
+    <select id="getDictList" resultType="java.lang.String">
+        SELECT dict_name AS name
+        FROM gg_dict
+        WHERE dict_type=#{dictType}
+    </select>
+
+    <!--搜索框接口-->
+    <select id="listSearchBox" resultType="java.util.Map">
+        <!--SELECT dict_name AS name,dict_no AS value FROM gg_dict
+        WHERE dict_type=#{dictType}-->
+        SELECT dict_type as type,dict_name AS name,dict_no AS value FROM sunmnet_manage.sunmnet_select_dict_info
+        WHERE left(dict_type,4)='BOX_'
+        order by dict_type,dict_sort asc
+    </select>
+</mapper>

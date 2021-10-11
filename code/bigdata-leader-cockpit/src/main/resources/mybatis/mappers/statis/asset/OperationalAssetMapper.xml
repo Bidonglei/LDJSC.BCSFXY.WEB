@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.asset.OperationalAssetMapper">
+	<resultMap id="BaseResultMap"
+		type="com.sunmnet.bigdata.web.model.entity.student.StudentInfo">
+		<result column="student_no" jdbcType="VARCHAR" property="studentNo" />
+		<result column="student_name" jdbcType="VARCHAR" property="studentName" />
+		<result column="gender" jdbcType="VARCHAR" property="gender" />
+		<result column="enroll_date" jdbcType="VARCHAR" property="enrollDate" />
+		<result column="grade" jdbcType="VARCHAR" property="grade" />
+		<result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+		<result column="education_type" jdbcType="VARCHAR" property="educationType" />
+		<result column="origin" jdbcType="VARCHAR" property="origin" />
+		<result column="academy_name" jdbcType="VARCHAR" property="academyName" />
+		<result column="major_name" jdbcType="VARCHAR" property="majorName" />
+		<result column="class_name" jdbcType="VARCHAR" property="className" />
+	</resultMap>
+
+    <sql id="investmentSelect" >
+        <where>
+            <if test="status!=null and status!=''">
+                AND a.status = #{status}
+            </if>
+            <if test="companyOrLegalRep!=null and companyOrLegalRep!=''">
+                AND (a.second_company_name like concat('%',#{companyOrLegalRep},'%') or a.legal_rep like concat('%',#{companyOrLegalRep},'%'))
+            </if>
+        </where>
+    </sql>
+
+    <!--对外投资公司列表-->
+    <select id="listForeignInvestment" resultType="java.util.Map">
+        SELECT
+            second_company_name AS companyName,
+            status AS status,
+            investment_ratio AS investmentRatio,
+            legal_rep AS legalRep,
+            registered_capital AS registeredCapital,
+            currency AS currency,
+            registration_date AS registrationDate,
+            registration_num AS registrationNum,
+            org_code AS orgCode,
+            social_credit_code AS socialCreditCode,
+            tax_num AS taxNum,
+            business_start_date AS businessStartDate,
+            business_end_date AS businessEndDate,
+            paid_capital AS paidCapital,
+            registered_address AS registeredAddress,
+            company_type AS companyType,
+            industry AS industry,
+            app_date AS appDate,
+            personnel_scale AS personnelScale,
+            registration_authority AS registrationAuthority,
+            business_scope AS businessScope
+        FROM
+          zc_foreign_investment a
+        <include refid="investmentSelect"/>
+    </select>
+
+    <!-- 股权结构-通过工商注册号获取详细信息 -->
+    <select id="ownershipStructure"  resultType="Map">
+      SELECT
+        second_company_name AS companyName,
+        status AS status,
+        investment_ratio AS investmentRatio,
+        legal_rep AS legalRep,
+	    registered_capital AS registeredCapital,
+        currency AS currency,
+        registration_date AS registrationDate,
+        registration_num AS registrationNum,
+        org_code AS orgCode,
+        social_credit_code AS socialCreditCode,
+        tax_num AS taxNum,
+        business_start_date AS businessStartDate,
+        business_end_date AS businessEndDate,
+        paid_capital AS paidCapital,
+        registered_address AS registeredAddress,
+        company_type AS companyType,
+        industry AS industry,
+        app_date AS appDate,
+        personnel_scale AS personnelScale,
+        registration_authority AS registrationAuthority,
+        business_scope AS businessScope
+      FROM zc_foreign_investment
+      WHERE registration_num=#{registrationNum}
+    </select>
+
+
+    <resultMap id="CompanyStructureMap"
+               type="map">
+        <result column="first_company_name" jdbcType="VARCHAR" property="firstCompanyName" />
+        <collection property="list" javaType="ArrayList" ofType="map">
+            <result column="second_company_name" property="secondCompanyName"/>
+            <result column="registration_num" property="registrationNum"/>
+        </collection>
+    </resultMap>
+
+    <!--对外经营性公司结构-->
+    <select id="listCompanyStructure" resultMap="CompanyStructureMap">
+        SELECT
+            first_company_name,second_company_name,registration_num
+        FROM zc_foreign_investment
+        GROUP BY first_company_name,second_company_name
+    </select>
+</mapper>

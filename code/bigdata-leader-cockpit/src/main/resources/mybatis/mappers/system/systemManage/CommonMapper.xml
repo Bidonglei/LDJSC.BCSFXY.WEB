@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.CommonMapper" >
+
+    <!--管理端搜索框接口-->
+    <select id="listManageSearchBox" resultType="java.util.Map">
+        SELECT dict_type as type,dict_name AS name,dict_no AS value
+        FROM sunmnet_select_dict_info
+        WHERE left(dict_type,4)='SYS_'
+        order by dict_type,dict_sort asc
+    </select>
+
+    <resultMap id="manageMenuBox" type="map">
+        <result column="one" jdbcType="VARCHAR" property="name" />
+        <result column="one" jdbcType="VARCHAR" property="value" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="two" jdbcType="VARCHAR" property="name" />
+            <result column="two" jdbcType="VARCHAR" property="value" />
+        </collection>
+    </resultMap>
+    <!--下拉菜单一二级搜索框-->
+    <select id="listManageMenuBox" resultMap="manageMenuBox">
+        select a.menu_name as one,b.menu_name as two
+        from sunmnet_menu_info a
+        left join (select menu_no,menu_name,parent_menu_no,menu_sort_no
+        from sunmnet_menu_info where menu_level='TWO')  b on a.menu_no=b.parent_menu_no
+        where a.system_no='LDJSC' and a.menu_level='ONE' and a.menu_name!='首页'
+        order by a.menu_sort_no+0 asc,b.menu_sort_no+0 asc
+    </select>
+
+    <resultMap id="manageMenuTreeBoxMap" type="map">
+        <result column="oneName" jdbcType="VARCHAR" property="name" />
+        <result column="oneValue" jdbcType="VARCHAR" property="value" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="twoName" jdbcType="VARCHAR" property="name" />
+            <result column="twoValue" jdbcType="VARCHAR" property="value" />
+        </collection>
+    </resultMap>
+    <!--下拉菜单一二级搜索框-->
+    <select id="listManageMenuTreeBox" resultMap="manageMenuTreeBoxMap">
+        select a.menu_name as oneName,a.menu_no as oneValue,b.menu_name as twoName,b.menu_no as twoValue
+        from sunmnet_menu_info a
+        left join (select menu_no,menu_name,parent_menu_no,menu_sort_no
+        from sunmnet_menu_info where menu_level='TWO')  b on a.menu_no=b.parent_menu_no
+        where a.system_no='LDJSC' and a.menu_level='ONE' and a.menu_name!='首页'
+        order by a.menu_sort_no+0 asc,b.menu_sort_no+0 asc
+    </select>
+
+    <!--数据配置下拉菜单-->
+    <select id="listDataFieldSource" resultType="map">
+        SELECT menu_one as one,menu_two as two,menu_three as three,
+        field_need as fieldNeed,field_name as fieldName,field_description as fieldDescription,
+        interface_name as interfaceName,script_path_name as scriptPathName
+        FROM sunmnet_data_field_source
+        <where>
+            <if test="menuOne != null and menuOne !=''">
+                AND menu_one=#{menuOne}
+            </if>
+            <if test="menuTwo != null and menuTwo !=''">
+                AND menu_two=#{menuTwo}
+            </if>
+            <if test="name != null and name !=''">
+                AND interface_name like concat('%',#{name},'%')
+            </if>
+        </where>
+    </select>
+
+    <!--用户登入接口-->
+    <select id="getUserLoginInfo" resultType="map">
+        select user_no as account,user_name as name,user_status as userStatus,user_password as userPassword
+        from sunmnet_user_info
+        where user_no=#{userNo} limit 1
+    </select>
+
+</mapper>

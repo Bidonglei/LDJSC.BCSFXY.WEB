@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.personnel.StaffDevelopmentMapper">
+
+    <sql id="developmentCondition">
+        <where>
+            <if test="abroadYear !=null and abroadYear != ''">
+                and abroad_year=#{abroadYear}
+            </if>
+            <if test="recentYear !=null and recentYear != ''">
+                and abroad_year>year(CURRENT_DATE)-#{recentYear}
+            </if>
+            <if test="abroadType !=null and abroadType != ''">
+                and abroad_type=#{abroadType}
+            </if>
+        </where>
+    </sql>
+
+    <!--国际交流地图 if(instr(country_name,'、')=0,country_name,substr(country_name,1,instr(country_name,'、')-1))-->
+    <select id="listInternationalCountry" parameterType="com.sunmnet.bigdata.web.model.request.personnel.StaffDevelopmentREQ" resultType="java.util.Map">
+        select country_name as name,count(1) as groupTime,sum(num) as personNum,meetNum
+        from (select country_name,count(1) num,count(if(abroad_type='国际会议',1,null)) meetNum
+        from rs_international_exchange
+        <include refid="developmentCondition"></include>
+        group by country_name,abroad_group) a
+        group by country_name
+    </select>
+
+    <!--国际交流-4个数据-->
+    <select id="getInternationalFourNum" parameterType="com.sunmnet.bigdata.web.model.request.personnel.StaffDevelopmentREQ" resultType="java.util.Map">
+        select count(distinct abroad_group) as groupTime,count(distinct country_name) as countryNum,count(1) as personNum,sum(abroad_funds) as funds
+        from rs_international_exchange
+        <include refid="developmentCondition"></include>
+    </select>
+
+    <!--国际交流-下拉框-->
+    <select id="getInternationalBox" parameterType="String" resultType="java.util.Map">
+        select dict_name as name,dict_no as value from gg_dict
+        where dict_type=#{dictType}
+    </select>
+
+    <!--学术交流目的国家-->
+    <select id="listCountryNameNumber" parameterType="String" resultType="java.util.Map">
+<!--        select academic_type as academicType,country_name as countryName,count(1) as value
+        from rs_international_exchange
+        <where>
+            <if test="abroadYear !=null and abroadYear != ''">
+                and abroad_year=#{abroadYear}
+            </if>
+        </where>
+        group by academic_type,country_name-->
+        select academic_type as academicType,country_name as countryName,SUM(value) as value
+        from
+        (select a.academic_type,case when b.value is not null then a.country_name else '其他' end as country_name,a.value from
+            (select academic_type,country_name,count(1) as value
+            from rs_international_exchange
+            <where>
+                <if test="abroadYear !=null and abroadYear != ''">
+                    and abroad_year=#{abroadYear}
+                </if>
+            </where>
+            group by academic_type,country_name
+            order by academic_type,value desc) a
+        LEFT JOIN
+            (select country_name,count(1) as value
+            from rs_international_exchange
+            <where>
+                <if test="abroadYear !=null and abroadYear != ''">
+                    and abroad_year=#{abroadYear}
+                </if>
+            </where>
+            where country_name is not null
+            group by country_name
+            order by value desc limit 20) b ON a.country_name=b.country_name) t
+        group by academic_type,country_name
+        order by academic_type,value desc
+    </select>
+
+    <!--学术交流学院参与人数-->
+    <select id="listAcademyNameNumber" parameterType="String" resultType="java.util.Map">
+<!--        select academic_type as academicType,academy_name as academyName,count(1) as value
+        from rs_international_exchange
+        <where>
+            <if test="abroadYear !=null and abroadYear != ''">
+                and abroad_year=#{abroadYear}
+            </if>
+        </where>
+        group by academic_type,academy_name-->
+        select academic_type as academicType,academy_name as academyName,SUM(value) as value
+        from
+        (select a.academic_type,case when b.value is not null then a.academy_name else '其他' end as academy_name,a.value from
+            (select academic_type,academy_name,count(1) as value
+            from rs_international_exchange
+            <where>
+                <if test="abroadYear !=null and abroadYear != ''">
+                    and abroad_year=#{abroadYear}
+                </if>
+            </where>
+            group by academic_type,academy_name
+            order by academic_type,value desc) a
+        LEFT JOIN
+            (select academy_name,count(1) as value
+            from rs_international_exchange
+            <where>
+                <if test="abroadYear !=null and abroadYear != ''">
+                    and abroad_year=#{abroadYear}
+                </if>
+            </where>
+            where academy_name is not null
+            group by academy_name
+            order by value desc limit 20) b ON a.academy_name=b.academy_name) t
+        group by academic_type,academy_name
+        order by academic_type,value desc
+    </select>
+
+</mapper>

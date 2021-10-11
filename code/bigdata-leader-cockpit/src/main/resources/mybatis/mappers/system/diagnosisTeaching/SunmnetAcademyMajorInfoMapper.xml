@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.diagnosisTeaching.SunmnetAcademyMajorInfoDao" >
+	<select id="queryMajorByDepartmentNono" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryMajorByDepartmentNoModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryMajorByDepartmentNoRequest" >
+       	select
+        `code` as majorNo,`name` as majorName
+        from
+        basic_major_info mi
+        left join basic_semester_info si
+            on mi.semester_year = si.semester_year and si.sort = 1
+        where mi.academy_code = #{departmentNo,jdbcType=VARCHAR}
+    </select>
+</mapper>

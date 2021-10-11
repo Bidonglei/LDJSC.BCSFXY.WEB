@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.personnel.PersonnelStructureMapper">
+
+    <sql id="teacherParam" >
+        <if test="isPlait!=null and isPlait!=''">
+            AND a.teacher_type_big = #{isPlait}
+        </if>
+        <if test="typeOfPreparation!=null and typeOfPreparation!=''">
+            AND a.teacher_type_small = #{typeOfPreparation}
+        </if>
+        <if test="employmentType!=null and employmentType!=''">
+            AND a.academy_margin = #{employmentType}
+        </if>
+        <if test="departmentType!=null and departmentType!=''">
+            AND a.academy_name = #{departmentType}
+        </if>
+        <if test="departmentName!=null and departmentName!=''">
+            AND a.department_name = #{departmentName}
+        </if>
+        <if test="departmentNameType!=null and departmentNameType!=''">
+            AND a.department_type = #{departmentNameType}
+        </if>
+    </sql>
+
+    <sql id="teacherBox" >
+        <if test="departmentName!=null and departmentName!=''">
+            AND a.department_name = #{departmentName}
+        </if>
+        <if test="job!=null and job!=''">
+            AND a.job = #{job}
+        </if>
+        <if test="jobTitle!=null and jobTitle!=''">
+            AND a.job_title = #{jobTitle}
+        </if>
+        <if test="education!=null and education!=''">
+            AND a.education = #{education}
+        </if>
+        <if test="politicalStatus!=null and politicalStatus!=''">
+            AND a.political_status = #{politicalStatus}
+        </if>
+        <if test="topTalentsName!=null and topTalentsName!=''">
+            AND a.top_talents_name = #{topTalentsName}
+        </if>
+        <if test="teacherName!=null and teacherName!=''">
+            AND (a.teacher_no like concat('%',#{teacherName},'%') or a.teacher_name like concat('%',#{teacherName},'%'))
+        </if>
+    </sql>
+
+    <!--人员结构：学院类人数，学院类平均年龄，学院类高级职称占比-->
+    <select id="listCountInfo" resultType="java.util.Map">
+      SELECT
+            (SELECT COUNT(1) from rs_teacher_info a
+                WHERE 1=1 <include refid="teacherParam"/> ) as countNum,
+            (SELECT IFNULL(AVG(a.age),0) from rs_teacher_info a
+                WHERE  1=1 <include refid="teacherParam"/>) as avgAge,
+            (SELECT ROUND(SUM((CASE WHEN a.is_experimenter='是' THEN 1 ELSE 0 END))/COUNT(1)*100,2) AS rate from rs_teacher_info a) as gjzc
+        FROM DUAL
+    </select>
+
+    <!--人员结构：各单位人数 -->
+    <select id="departmentNum" resultType="map">
+        SELECT
+            department_name AS departmentName, -- 单位名称
+            COUNT(*) AS total -- 人数
+        FROM
+          rs_teacher_info
+        <where>
+            <if test="teacherTypeBig != null and teacherTypeBig != ''">
+                and teacher_type_big=#{teacherTypeBig}
+            </if>
+        </where>
+        GROUP BY department_name
+        ORDER BY total DESC
+    </select>
+
+    <!--人员结构：各单位人员编制结构 -->
+    <select id="getPersonBigType" resultType="map">
+        SELECT
+            teacher_type_big AS type, -- 编制类型：事业编制，非事业编制
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM rs_teacher_info
+        WHERE department_name=#{departmentName}
+        GROUP BY teacher_type_big
+    </select>
+
+    <!--人员结构：各单位年龄结构对比(事业编制) -->
+    <select id="getAgeType" resultType="map">
+        SELECT
+            age AS age, -- 年龄类型
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM (SELECT
+                CASE WHEN age  &lt;= 35 THEN '35岁及以下'
+                    WHEN age BETWEEN 36 AND 45 THEN '36-45岁'
+                    WHEN age BETWEEN 46 AND 55 THEN '46-55岁'
+                    WHEN age &gt;= 56 THEN '56岁及以上'
+                    ELSE '其他'
+                END AS age
+                FROM
+                  rs_teacher_info a
+                WHERE department_name=#{departmentName} and teacher_type_big=#{teacherTypeBig}) a
+        GROUP BY age
+    </select>
+
+<!--    &lt;!&ndash;人员结构：各单位男女比例(事业编制) &ndash;&gt;
+    <select id="getSexType" resultType="map">
+        SELECT
+            gender AS sexType, &#45;&#45; 性别类型
+            COUNT(*) AS num, &#45;&#45; 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate &#45;&#45; 占比
+        FROM rs_teacher_info
+        WHERE department_name=#{departmentName} and teacher_type_big=#{teacherTypeBig}
+        GROUP BY gender
+    </select>-->
+
+    <resultMap id="PersonSexMap" type="map">
+        <!--<result column="academyCode" jdbcType="VARCHAR" property="academyCode" />-->
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="gender" jdbcType="VARCHAR" property="gender" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+            <result column="rate" jdbcType="VARCHAR" property="rate" />
+        </collection>
+    </resultMap>
+
+    <!--人员结构：各单位男女比例(事业编制) -->
+    <select id="getSexType" resultMap="PersonSexMap">
+        SELECT
+            a.department_name AS academyName,
+            gender,
+            num,
+            ROUND(num/total*100,2) AS rate
+        FROM
+            (SELECT
+                    department_name AS department_name,
+                    gender,
+                    COUNT(*) AS num
+            FROM rs_teacher_info
+            WHERE teacher_type_big=#{teacherTypeBig}
+            GROUP BY department_name,gender) a
+        JOIN
+            (SELECT
+                    department_name AS department_name,
+                    COUNT(*) AS total
+            FROM rs_teacher_info
+            WHERE teacher_type_big=#{teacherTypeBig}
+            GROUP BY department_name) b ON a.department_name=b.department_name
+        ORDER BY gender DESC,rate DESC
+    </select>
+    <!--人员结构：各单位职称情况(事业编制) -->
+    <select id="getJobTitleType" resultType="map">
+        SELECT
+            job_title AS jobTitleType, -- 职称类型
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM rs_teacher_info
+        WHERE department_name=#{departmentName} and teacher_type_big=#{teacherTypeBig}
+        GROUP BY job_title
+    </select>
+
+    <!--人员结构：各单位党员分布情况(事业编制) -->
+    <select id="getPartyType" resultType="map">
+        SELECT
+            is_party AS partyType, -- 党员类型
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM rs_teacher_info
+        WHERE department_name=#{departmentName} and teacher_type_big=#{teacherTypeBig}
+        GROUP BY is_party
+    </select>
+
+
+    <!--人员结构扇形:年龄-->
+    <select id="listAge" resultType="java.util.Map">
+        SELECT age,COUNT(*) AS num
+        FROM (SELECT
+                CASE WHEN age  &lt;= 35 THEN '35岁及以下'
+                    WHEN age BETWEEN 36 AND 45 THEN '36-45岁'
+                    WHEN age BETWEEN 46 AND 55 THEN '46-55岁'
+                    WHEN age &gt;= 56 THEN '56岁及以上'
+                    ELSE '未知'
+                END AS age
+                FROM
+                rs_teacher_info a
+                WHERE
+                1=1 <include refid="teacherParam"/>) a
+        GROUP BY age order by num desc
+    </select>
+    <!--人员结构扇形:职称-->
+    <select id="listJobTitle" resultType="java.util.Map">
+        SELECT
+          job_title AS jobTitle,
+          COUNT(*) AS num
+        FROM
+          rs_teacher_info a
+        WHERE 1 = 1 <include refid="teacherParam"/>
+        GROUP BY job_title order by num desc
+    </select>
+    <!--人员结构扇形:学缘-->
+    <select id="listLearningEdge" resultType="java.util.Map">
+        SELECT
+          academy_margin AS academyMargin,
+          COUNT(*) AS num
+        FROM
+        rs_teacher_info a
+        WHERE 1 = 1 <include refid="teacherParam"/>
+        GROUP BY academy_margin order by num desc
+    </select>
+    <!--人员结构扇形:学历-->
+    <select id="listEducation" resultType="java.util.Map">
+        SELECT
+            a.education,COUNT(1) num
+        FROM rs_teacher_info a  where 1=1 <include refid="teacherParam"/>
+        GROUP BY a.education order by num desc
+    </select>
+    <!--人员结构扇形:男女比例-->
+    <select id="listTeacherGender" resultType="java.util.Map">
+        SELECT
+            a.gender as name,COUNT(1) num
+        FROM rs_teacher_info a where 1=1 <include refid="teacherParam"/>
+        GROUP BY a.gender order by num desc
+    </select>
+    <!--人员结构扇形:政治面貌-->
+    <select id="listPoliticalStatus" resultType="java.util.Map">
+        SELECT
+            a.political_status as name,COUNT(1) num
+        FROM rs_teacher_info a  where 1=1 <include refid="teacherParam"/>
+        GROUP BY a.political_status order by num desc
+    </select>
+    <!--人员结构扇形:岗位结构 无用-->
+    <select id="listPost" resultType="java.util.Map">
+        <!--SELECT
+            a.job_structure post,COUNT(1) num
+        FROM rs_teacher_info a  where 1=1 <include refid="teacherParam"/>
+        GROUP BY a.job_structure-->
+    </select>
+    <!--人员结构扇形:薪级 无用-->
+    <select id="listSalary" resultType="java.util.Map">
+        <!--SELECT
+        a.salary salary,COUNT(1) num
+        FROM rs_teacher_info a  where salary!='' AND salary is not null <include refid="teacherParam"/>
+        GROUP BY a.salary-->
+    </select>
+    <!--学院职称分布：各学院职称分布以及占比情况-->
+    <select id="distributionOfTitlesInEachCollege" resultType="java.util.Map">
+        SELECT a.academy_name,COUNT(if(a.job_title='正高',1,NULL)) zg,COUNT(if(a.job_title='副高',1,NULL)) fg
+            ,COUNT(if(a.job_title='中级',1,NULL)) zj,COUNT(if(a.job_title='初级',1,NULL)) cj,COUNT(if(a.job_title='正高',1,NULL))/COUNT(1) zgzb
+            ,COUNT(if(a.job_title='副高',1,NULL))/COUNT(1) fgzb,COUNT(if(a.job_title='中级',1,NULL))/COUNT(1) zjzb,COUNT(if(a.job_title='初级',1,NULL))/COUNT(1) cjzb
+        FROM rs_teacher_info a
+            WHERE a.teacher_type_big='事业编制' AND a.academy_name is not null AND a.academy_name!=''
+        GROUP BY a.academy_name order by a.academy_code
+    </select>
+    <!--学院学缘分布：学缘分布情况-->
+    <select id="listAcademicDistribution" resultType="java.util.Map">
+        SELECT a.academy_name,COUNT(if(a.academy_margin='本校毕业',1,NULL)) bx,COUNT(if(a.academy_margin='境外学校',1,NULL)) jw,
+                    COUNT(if(a.academy_margin='国内其他',1,NULL)) gn,COUNT(if(a.academy_margin='其他',1,NULL)) qt,
+        COUNT(if(a.academy_margin='本校毕业',1,NULL))/COUNT(1) bxzb,COUNT(if(a.academy_margin='境外学校',1,NULL))/COUNT(1) jwzb,
+        COUNT(if(a.academy_margin='国内其他',1,NULL))/COUNT(1) gnzb,COUNT(if(a.academy_margin='其他',1,NULL))/COUNT(1) qtzb
+        FROM rs_teacher_info a
+            WHERE a.teacher_type_big='事业编制' AND a.academy_name is not null AND a.academy_name!=''
+        GROUP BY a.academy_name order by a.academy_code
+    </select>
+    <!--学院年龄分析：按年龄分布图-->
+    <select id="listAcademicAge" resultType="java.util.Map">
+      SELECT CAST(a.age AS SIGNED) age,COUNT(1) num FROM rs_teacher_info a
+        WHERE a.teacher_type_big='事业编制' and academy_name IS NOT NULL <include refid="teacherParam"/>
+        GROUP BY CAST(a.age AS SIGNED)
+    </select>
+    <!--人员列表：人员信息-->
+    <select id="listTeacherInfoByName" resultType="java.util.Map">
+        SELECT a.teacher_no as teacherNo,a.teacher_name as teacherName,a.political_status as politicalStatus,
+        a.education,a.job_title as jobTitle,a.job,a.academy_name as academyName,a.department_name as departmentName
+        <choose>
+            <when test="realPhone == 'REAL_PHONE'.toString()">
+                ,a.phone
+            </when>
+            <otherwise>
+                ,if(phone='','',concat(left(phone,3),'****',right(phone,4))) as phone
+            </otherwise>
+        </choose>
+        FROM rs_teacher_info a
+        WHERE a.teacher_type_big='事业编制' <include refid="teacherBox"/>
+        ORDER BY (CASE WHEN academy_code IS NULL THEN 2 ELSE 1 END),academy_code
+    </select>
+    <!--高层次人才：人才列表-->
+    <select id="listTopTalentsInfoByName" resultType="java.util.Map">
+        SELECT a.teacher_no as teacherNo,a.teacher_name as teacherName,a.top_talents_name as topTalentsName,
+        a.age,a.education,a.job_title as jobTitle,a.job,a.department_name as departmentName,a.entry_date as entryDate
+        <choose>
+            <when test="realPhone == 'REAL_PHONE'.toString()">
+                ,a.phone
+            </when>
+            <otherwise>
+                ,if(phone='','',concat(left(phone,3),'****',right(phone,4))) as phone
+            </otherwise>
+        </choose>
+        FROM rs_top_talents a where 1=1 <include refid="teacherBox"/>
+    </select>
+
+    <resultMap id="StaffStructMap"
+               type="com.sunmnet.bigdata.web.model.response.personnel.QueryStaffStructureResponse">
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list" ofType="com.sunmnet.bigdata.web.model.StaffStructureModel" select="staffSmallStructure" column="name">
+        </collection>
+    </resultMap>
+    <!-- 人员结构:编制类别 -->
+    <select id="staffStructure"  resultMap="StaffStructMap">
+        SELECT a.teacher_type_big as name,
+            COUNT(1) num
+        FROM rs_teacher_info a
+        GROUP BY a.teacher_type_big
+        ORDER BY teacher_type_big
+    </select>
+    <!-- 人员结构:编制对应小类别 -->
+    <select id="staffSmallStructure"  resultType="StaffStructureModel">
+        SELECT
+            a.teacher_type_small as name,
+            COUNT(1) num
+        FROM rs_teacher_info a
+        WHERE a.teacher_type_big=#{name}
+        GROUP BY a.teacher_type_small
+        ORDER BY teacher_type_big
+    </select>
+
+    <resultMap id="DepartmentType" type="java.util.Map">
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list" ofType="java.util.Map" select="listDepartmentNameAll" column="name">
+        </collection>
+    </resultMap>
+    <!-- 人员结构:单位类型 -->
+    <select id="listDepartmentTypeAll"  resultMap="DepartmentType">
+        SELECT a.department_type as name,COUNT(1) num
+        FROM rs_teacher_info a
+        GROUP BY a.department_type
+        ORDER BY num desc
+    </select>
+
+    <!-- 人员结构:单位名称分类 -->
+    <select id="listDepartmentNameAll"  resultType="java.util.Map">
+        SELECT a.department_name as name,COUNT(1) num
+        FROM rs_teacher_info a
+        WHERE a.department_type=#{name}
+        GROUP BY a.department_name
+        ORDER BY num desc
+    </select>
+    <!--职称分布-->
+    <select id="distributionOfTitles" resultType="java.util.Map">
+        SELECT a.academy_name AS academyName,COUNT(if(a.job_title='正高',1,NULL)) zg,COUNT(if(a.job_title='副高',1,NULL)) fg
+            ,COUNT(if(a.job_title='中级',1,NULL)) zj,COUNT(if(a.job_title='初级',1,NULL)) cj,COUNT(if(a.job_title='正高',1,NULL))/COUNT(1) zgzb
+            ,COUNT(if(a.job_title='副高',1,NULL))/COUNT(1) fgzb,COUNT(if(a.job_title='中级',1,NULL))/COUNT(1) zjzb,COUNT(if(a.job_title='初级',1,NULL))/COUNT(1) cjzb
+        FROM rs_teacher_info a
+            WHERE a.teacher_type_big='事业编制'
+        <if test="academyName!=null and academyName!=''">
+            AND a.academy_name=#{academyName}
+        </if>
+    </select>
+    <!--学院学缘分布：学院学缘详细分布情况-->
+    <select id="learningEdgeDistribution" resultType="java.util.Map">
+        SELECT a.academy_name AS academyName,COUNT(if(a.academy_margin='本校毕业',1,NULL)) bx,COUNT(if(a.academy_margin='境外学校',1,NULL)) jw,
+                    COUNT(if(a.academy_margin='国内其他',1,NULL)) gn,COUNT(if(a.academy_margin='不明确',1,NULL)) qt,
+        COUNT(if(a.academy_margin='本校毕业',1,NULL))/COUNT(1) bxzb,COUNT(if(a.academy_margin='境外学校',1,NULL))/COUNT(1) jwzb,
+        COUNT(if(a.academy_margin='国内其他',1,NULL))/COUNT(1) gnzb,COUNT(if(a.academy_margin='不明确',1,NULL))/COUNT(1) qtzb
+        FROM rs_teacher_info a
+            WHERE a.teacher_type_big='事业编制'
+        <if test="academyName!=null and academyName!=''">
+            AND a.academy_name=#{academyName}
+        </if>
+    </select>
+    <!--学院年龄分析：年龄段与学院映射图-->
+    <select id="ageAndAcademicStructure" resultType="java.util.Map">
+        SELECT academyName,age,COUNT(*) AS num
+        FROM (SELECT academy_code,
+            CASE WHEN t.age &lt;=35 THEN '35岁以下'
+            WHEN t.age &gt;= 36 AND t.age &lt;= 45 THEN '36~45岁'
+            WHEN t.age &gt;= 46 AND t.age &lt;= 55 THEN '46~55岁'
+            WHEN t.age &gt;= 56 THEN '56岁以上'
+            END AS age,
+            t.academy_name AS academyName
+            FROM rs_teacher_info t
+        WHERE t.academy_name IS NOT NULL AND t.teacher_type_big='事业编制') a
+        GROUP BY academyName,age order by age,a.academy_code
+    </select>
+
+    <!--学科年龄分析：年龄段与学科映射图-->
+    <select id="ageAndSubjectStructure" resultType="java.util.Map">
+        SELECT subjectCode,subjectName,age,COUNT(*) AS num
+        FROM (SELECT
+                CASE WHEN t.age &lt;=35 THEN '35岁以下'
+                WHEN t.age &gt;= 36 AND t.age &lt;= 45 THEN '36~45岁'
+                WHEN t.age &gt;= 46 AND t.age &lt;= 55 THEN '46~55岁'
+                WHEN t.age &gt;= 56 THEN '56岁以上'
+                END AS age,
+                s.subject_code AS subjectCode,
+                s.sub_discipline AS subjectName
+            FROM rs_teacher_info t
+            RIGHT JOIN rs_sub_discipline s ON t.teacher_no=s.teacher_no
+            WHERE s.subject_code IS NOT NULL AND s.subject_code !='' AND t.teacher_type_big='事业编制') a
+        GROUP BY subjectCode,subjectName,age order by age,subjectCode
+    </select>
+
+    <!--学院年龄分析：学院年龄箱线-->
+    <select id="academicAndAgeBoxLine" resultType="java.util.Map">
+        SELECT
+            t.academy_name AS academyName, -- 学院名称
+            format(MIN(age),2) AS min, -- 最小值
+            format(MAX(age),2) AS max, -- 最大值
+            GROUP_CONCAT(age) AS stringAge  -- 该学院下所有年龄
+        FROM rs_teacher_info t
+        WHERE t.academy_name IS NOT NULL AND t.teacher_type_big='事业编制'
+        GROUP BY academyName order by t.academy_code
+    </select>
+
+    <!--大于58学院人数-->
+    <select id="academicBigAgeNum" resultType="int">
+        SELECT
+          COUNT(*) AS num
+        FROM rs_teacher_info t
+        WHERE t.academy_name IS NOT NULL AND t.teacher_type_big='事业编制' AND age &gt;58 AND academy_name=#{academyName}
+    </select>
+
+    <!--大于58人数占比-->
+    <select id="academicBigAgeRate" resultType="double">
+        SELECT
+          ROUND(#{num}/COUNT(*)*100,2) AS rate
+        FROM rs_teacher_info t
+        WHERE t.academy_name IS NOT NULL AND t.teacher_type_big='事业编制' AND academy_name=#{academyName}
+    </select>
+
+    <resultMap id="AcademicSubject" type="com.sunmnet.bigdata.web.model.response.personnel.QueryAcademyAndSubjectResponse">
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list"  ofType="map" select="getSubjectByAcademyName" column="academyName">
+        </collection>
+    </resultMap>
+    <!--学科人事分析：学院教师与学科的对应关系图，学院人数-->
+    <select id="academicAndSubject" resultMap="AcademicSubject">
+        SELECT
+            academy_name AS academyName,COUNT(1) AS num
+        FROM
+        (select academy_code,academy_name,teacher_no,count(1) FROM rs_sub_discipline
+        group by academy_code,academy_name,teacher_no) a
+        GROUP BY academy_name order by academy_code
+    </select>
+
+    <!--获取学院下学科-->
+    <select id="getSubjectByAcademyName" resultType="java.util.Map">
+        SELECT
+            DISTINCT sub_discipline AS subject
+        FROM
+            rs_sub_discipline
+        WHERE sub_discipline IS NOT NULL AND academy_name=#{academyName}
+    </select>
+    <!--学科人事分析：学院教师与学科的对应关系图,获取学科人数-->
+    <select id="getSubjectNum" resultType="java.util.Map">
+        SELECT sub_discipline AS subject,COUNT(1) AS num
+        FROM rs_sub_discipline
+        GROUP BY sub_discipline order by subject_code
+    </select>
+
+    <resultMap id="AcademySubjectDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list" ofType="map" select="getAcademySubjectDetail" column="academyCode">
+        </collection>
+    </resultMap>
+    <!--学科人事分析：各学院学科分布情况-->
+    <select id="academySubjectDis" resultMap="AcademySubjectDisMap">
+        SELECT
+            academy_code AS academyCode, -- 学院代码
+            academy_name AS academyName, -- 学院名称
+            COUNT(DISTINCT sub_discipline) AS num -- 个数
+        FROM
+            rs_sub_discipline
+        WHERE sub_discipline IS NOT NULL
+        GROUP BY academy_code,academy_name
+        ORDER BY num DESC
+    </select>
+
+    <!--学科人事分析：单个学院学科分布详细情况-->
+    <select id="getAcademySubjectDetail" resultType="map">
+        SELECT
+            DISTINCT
+            subject_code AS subjectCode, -- 学科代码
+            CASE WHEN sub_discipline='' THEN '未知' ELSE sub_discipline END AS subjectName -- 学科名称
+        FROM
+            rs_sub_discipline
+        WHERE sub_discipline IS NOT NULL AND academy_code=#{academyCode}
+    </select>
+
+    <resultMap id="SubjectAcademyDisMap" type="map">
+        <result column="subjectCode" jdbcType="VARCHAR" property="subjectCode" />
+        <result column="subjectName" jdbcType="VARCHAR" property="subjectName" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list" ofType="map" select="getSubjectAcademyDetail" column="subjectCode">
+        </collection>
+    </resultMap>
+    <!--学科人事分析：各学科支持学院情况-->
+    <select id="subjectAcademyDis" resultMap="SubjectAcademyDisMap">
+        SELECT
+            subject_code AS subjectCode, -- 学科代码
+            CASE WHEN sub_discipline='' THEN '未知' ELSE sub_discipline END AS subjectName, -- 学科名称
+            COUNT(DISTINCT academy_code) AS num -- 个数
+        FROM
+            rs_sub_discipline
+        WHERE sub_discipline IS NOT NULL
+        GROUP BY sub_discipline
+        ORDER BY (CASE WHEN sub_discipline='' THEN 2 ELSE 1 END),num DESC
+    </select>
+
+    <!--学科人事分析：单个学科支持学院详细情况-->
+    <select id="getSubjectAcademyDetail" resultType="map">
+       SELECT
+            DISTINCT
+            academy_code AS academyCode, -- 学院代码
+            academy_name AS academyName -- 学院名称
+        FROM
+            rs_sub_discipline
+        WHERE subject_code=#{subjectCode}
+    </select>
+
+    <!--学科人事分析：高端人才数量前五-->
+    <select id="subjectTalentList" resultType="java.util.Map">
+        SELECT
+            subject_name AS subjectName,COUNT(*) AS num
+        FROM rs_top_talents
+        GROUP BY subject_name
+        ORDER BY num DESC
+    </select>
+
+    <!--学科人事分析：高级职称占比前五-->
+    <select id="subjectHighTitleList" resultType="java.util.Map">
+		SELECT
+			b.sub_discipline AS subjectName,
+			COUNT(*) AS num,
+			ROUND(SUM(CASE WHEN a.job_title = '正高' or a.job_title = '副高' THEN 1 ELSE 0 END)/COUNT(*)*100,2) AS rate
+		FROM rs_teacher_info a JOIN rs_sub_discipline b ON a.teacher_no=b.teacher_no
+		WHERE a.teacher_type_big='事业编制'
+		GROUP BY b.sub_discipline
+		ORDER BY num DESC
+    </select>
+
+    <!--学科人事分析：总人数前五-->
+    <select id="subjectAllList" resultType="java.util.Map">
+        SELECT a.sub_discipline AS subjectName,COUNT(1) AS num
+        FROM rs_sub_discipline a left join rs_teacher_info b ON a.teacher_no=b.teacher_no
+        where b.teacher_type_big='事业编制'
+        GROUP BY a.sub_discipline
+        ORDER BY num DESC
+    </select>
+    
+    <sql id="newcomers" >
+            AND str_to_date(entry_date,'%Y%m%d')>date_sub(CURRENT_DATE,interval #{recentTime} quarter)
+            AND teacher_type_big='事业编制'
+        <if test="departmentName!=null and departmentName!=''">
+            AND department_name = #{departmentName}
+        </if>
+        <!--<if test="departmentName=null">
+            AND department_name is null
+        </if>-->
+        <if test="teacherTypeSmall!=null and teacherTypeSmall!=''">
+            AND teacher_type_small = #{teacherTypeSmall}
+        </if>
+    </sql>
+
+    <!--新进人员统计图-->
+    <select id="listNewcomersAll" parameterType="NewcomersREQ" resultType="java.util.Map">
+        select department_name as name,count(1) as newcomers,
+        count(if(left(education,2)='博士',1,null)) as doctor,
+        count(if(academy_margin='境外学校',1,null)) as overseas,
+        count(if(academy_margin='本校毕业',1,null)) as inschool
+        from rs_teacher_info
+        <where>
+            <include refid="newcomers"></include>
+        </where>
+        group by department_name order by newcomers desc
+    </select>
+
+    <!--本校学缘人员-->
+    <select id="listNewcomersInSchool" parameterType="NewcomersREQ" resultType="java.util.Map">
+        select teacher_name as teacherName,department_name as departmentName,
+        b.attended_college as attendedCollege,b.tutor
+        from rs_teacher_info a
+        left join rs_teacher_add_info b on a.teacher_no=b.teacher_no
+        where academy_margin='本校毕业' <include refid="newcomers"></include>
+    </select>
+
+    <!--非博士学历人员-->
+    <select id="listNewcomersNotDoctor" parameterType="NewcomersREQ" resultType="java.util.Map">
+        select teacher_name as teacherName,department_name as departmentName,education,age
+        from rs_teacher_info
+        where left(education,2)!='博士' <include refid="newcomers"></include>
+    </select>
+
+    <!--海外学缘人员-->
+    <select id="listNewcomersOverseas" parameterType="NewcomersREQ" resultType="java.util.Map">
+        select teacher_name as teacherName,department_name as departmentName,
+        graduate_school as graduateSchool,nationality
+        from rs_teacher_info
+        where academy_margin='境外学校' <include refid="newcomers"></include>
+    </select>
+</mapper>

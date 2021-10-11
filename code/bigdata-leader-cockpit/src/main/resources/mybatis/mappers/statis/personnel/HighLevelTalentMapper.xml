@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.personnel.HighLevelTalentMapper">
+
+    <!--高层次人才单位分布-->
+    <select id="talentCollegeDistribute" resultType="Map">
+        SELECT
+            department_name AS departmentName,
+            top_talents_code AS talentCode,
+            top_talents_name AS talentName,
+            IFNULL(is_higt_talent,"") AS isHigtTalent,
+            GROUP_CONCAT(teacher_name) AS name,
+            COUNT(*) AS num
+        FROM rs_top_talents
+        GROUP BY department_name,top_talents_code,top_talents_name,is_higt_talent
+    </select>
+
+    <!--高层次人才学科分布-->
+    <select id="talentSubjectDistribute" resultType="Map">
+        <!--SELECT
+            subject_simple_name AS subjectName,
+            top_talents_code AS talentCode,
+            top_talents_name AS talentName,
+            IFNULL(is_higt_talent,"") AS isHigtTalent,
+            GROUP_CONCAT(teacher_name) AS name,
+            COUNT(*) AS num
+        FROM rs_top_talents
+        GROUP BY subject_simple_name,top_talents_code,top_talents_name,is_higt_talent-->
+        SELECT
+        if(sub_discipline is null or sub_discipline='','未知',sub_discipline) AS subjectName,
+        top_talents_code AS talentCode,
+        top_talents_name AS talentName,
+        IFNULL(is_higt_talent,"") AS isHigtTalent,
+        GROUP_CONCAT(teacher_name) AS name,
+        COUNT(*) AS num
+        from (select a.teacher_name,a.top_talents_code,a.top_talents_name,a.is_higt_talent,b.sub_discipline
+        FROM rs_top_talents a
+        left join rs_sub_discipline b on a.teacher_no=b.teacher_no
+        GROUP BY a.teacher_name,a.top_talents_code,a.top_talents_name,a.is_higt_talent,b.sub_discipline) a
+        group by sub_discipline,top_talents_code,top_talents_name,is_higt_talent
+    </select>
+
+    <!--引进分析：人才引进源（学院）-->
+    <select id="introduceAcademicStr" resultType="java.util.Map">
+        <!--SELECT academyCode,academyName,age,COUNT(*) AS num
+        FROM (SELECT academy_code AS academyCode,
+                    CASE WHEN t.age &lt;=35 THEN '35岁以下'
+                    WHEN t.age &gt;= 36 AND t.age &lt;= 45 THEN '36~45岁'
+                    WHEN t.age &gt;= 46 AND t.age &lt;= 55 THEN '46~55岁'
+                    WHEN t.age &gt;= 56 THEN '56岁以上'
+                    END AS age,
+                t.academy_name AS academyName
+                FROM rs_introduce_talent t ) a
+        GROUP BY academyCode,academyName,age order by academyCode,age-->
+        SELECT academy_code as academyCode,
+        academy_name as academyName,
+        from_school_type as fromSchoolType,
+        COUNT(1) AS num
+        FROM rs_introduce_talent a
+        GROUP BY academy_code,academy_name,from_school_type
+        order by from_school_type,academy_code
+    </select>
+
+    <!--引进分析：人才引进源（学科）-->
+    <select id="introduceSubjectStr" resultType="java.util.Map">
+        <!--SELECT subjectCode,subjectName,age,COUNT(*) AS num
+        FROM (SELECT
+                CASE WHEN t.age &lt;=35 THEN '35岁以下'
+                WHEN t.age &gt;= 36 AND t.age &lt;= 45 THEN '36~45岁'
+                WHEN t.age &gt;= 46 AND t.age &lt;= 55 THEN '46~55岁'
+                WHEN t.age &gt;= 56 THEN '56岁以上'
+                END AS age,
+                s.subject_code AS subjectCode,
+                s.subject_name AS subjectName
+            FROM rs_introduce_talent t
+            RIGHT JOIN rs_introduce_subject s ON t.teacher_no=s.teacher_no ) a
+        GROUP BY subjectCode,subjectName,age order by subjectCode,age-->
+        SELECT ifnull(b.subject_code,'未知') AS subjectCode,
+        ifnull(b.sub_discipline,'未知') AS subjectName,
+        from_school_type as fromSchoolType,
+        COUNT(1) AS num
+        FROM rs_introduce_talent a
+        LEFT JOIN rs_sub_discipline b ON a.teacher_no=b.teacher_no
+        GROUP BY b.subject_code,b.sub_discipline,from_school_type
+        order by from_school_type,b.subject_code
+    </select>
+
+    <!--引进分析：学院历年引进人才分析-->
+    <select id="listIntroduceTalent" resultType="java.util.Map">
+        select academy_name as name,
+        introduce_date as introduceDate,
+        count(1) as value,
+        GROUP_CONCAT(concat(teacher_name)) as list
+        from rs_introduce_talent
+        where introduce_date!='' and introduce_date is not null
+        group by academy_name,introduce_date
+        order by academy_code
+    </select>
+
+
+</mapper>

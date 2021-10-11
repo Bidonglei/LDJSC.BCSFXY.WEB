@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetSystemColorDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemColorEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="system_no" property="systemNo" jdbcType="VARCHAR" />
+        <result column="set_position" property="setPosition" jdbcType="VARCHAR" />
+        <result column="color_name" property="colorName" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, system_no, set_position, color_name, create_time, last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_color
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemColorEntity" >
+        insert into sunmnet_system_color
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="systemNo != null" >
+                system_no,
+            </if>
+            <if test="setPosition != null" >
+                set_position,
+            </if>
+            <if test="colorName != null" >
+                color_name,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="systemNo != null" >
+                #{systemNo,jdbcType=VARCHAR},
+            </if>
+            <if test="setPosition != null" >
+                #{setPosition,jdbcType=VARCHAR},
+            </if>
+            <if test="colorName != null" >
+                #{colorName,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemColorEntity" >
+        update sunmnet_system_color
+        <set >
+            <if test="systemNo != null" >
+                system_no = #{systemNo,jdbcType=VARCHAR},
+            </if>
+            <if test="setPosition != null" >
+                set_position = #{setPosition,jdbcType=VARCHAR},
+            </if>
+            <if test="colorName != null" >
+                color_name = #{colorName,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_system_color
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+    
+     <!--设置颜色2019-01-21 zfb-->
+	<select id="querySunmnetSystemColor" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.SetSystemColorRequest" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_color
+        where system_no = #{systemNo,jdbcType=VARCHAR}  
+        and set_position = #{setPosition,jdbcType=VARCHAR}      
+    </select>
+    
+     <!--查询颜色设置列表2019-01-22 zfb-->
+	<select id="queryColorSetList" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryColorSetListModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryColorSetListRequest" >
+        select 
+        set_position as setPosition, color_name as colorName
+        from sunmnet_system_color
+        where system_no = #{systemNo,jdbcType=VARCHAR} 
+    </select>
+
+</mapper>

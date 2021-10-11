@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.PageDataSourceDao">
+
+    <insert id="savePageDataSource" parameterType="com.sunmnet.bigdata.systemManage.base.support.request.PageDataSourceREQ">
+        insert into sunmnet_page_data_source (
+        page_code,
+        page_name,
+        chart_name,
+        data_type,
+        data_synchronize,
+        data_status,
+        data_question,
+        data_sort)
+        VALUES ((select menu_url from sunmnet_menu_info where menu_name=#{pageName}),
+        #{pageName},#{chartName},#{dataType},#{dataSynchronize},#{dataStatus},#{dataQuestion},#{dataSort})
+    </insert>
+
+    <select id="getDataSortByName" parameterType="com.sunmnet.bigdata.systemManage.base.support.request.PageDataSourceREQ" resultType="java.lang.Integer">
+        select max(data_sort)+1
+        from sunmnet_page_data_source
+        where page_name=#{pageName}
+    </select>
+
+
+
+
+
+
+
+</mapper>

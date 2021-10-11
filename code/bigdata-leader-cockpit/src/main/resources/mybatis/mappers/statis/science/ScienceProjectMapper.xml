@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.science.ScienceProjectMapper">
+  <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.web.model.entity.science.ScienceProject">
+    <result column="science_year" jdbcType="VARCHAR" property="scienceYear" />
+    <result column="project_type" jdbcType="VARCHAR" property="projectType" />
+    <result column="academy_name" jdbcType="VARCHAR" property="academyName" />
+    <result column="project_team" jdbcType="VARCHAR" property="projectTeam" />
+    <result column="project_money" jdbcType="VARCHAR" property="projectMoney" />
+    <result column="project_number" jdbcType="VARCHAR" property="projectNumber" />
+  </resultMap>
+  <select id="listAll" resultMap="BaseResultMap">
+    select science_year, project_type, academy_name, project_team, project_money, project_number
+    from r_science_project
+  </select>
+    <select id="listOneType" resultType="java.util.Map">
+        SELECT a.project_type name FROM r_science_project a WHERE a.science_year=#{year} GROUP BY a.project_type
+    </select>
+  <select id="listTwoName" resultType="java.util.Map">
+    SELECT a.academy_name name  FROM r_science_project a
+          WHERE a.science_year=#{year} AND a.project_type=#{proType} GROUP BY a.academy_name;
+  </select>
+  <select id="listThreeTeam" resultType="java.util.Map">
+    SELECT a.science_year scienceYear,a.project_team projectTeam,a.project_money projectMoney,a.project_number projectNumber FROM r_science_project a
+          WHERE a.science_year=#{year} AND a.project_type=#{proType} AND a.academy_name=#{proAcademy}
+  </select>
+  <select id="listProMoney" resultType="java.util.Map">
+     SELECT SUM(a.project_money) proMoney,SUM(a.project_number) proNum FROM r_science_project a WHERE a.science_year=#{year}
+  </select>
+  <select id="listTop" resultType="java.util.Map">
+    SELECT a.science_year scienceYear,a.project_type projectType,a.academy_name academyName,SUM(a.project_money) projectMoney,SUM(a.project_number) projectNumber FROM r_science_project a
+            WHERE a.science_year=#{year} GROUP BY a.academy_name ORDER BY SUM(project_money) DESC limit 3
+  </select>
+    <select id="listPieScienceProByYear" resultType="java.util.Map">
+        SELECT a.academy_name name,SUM(a.project_money) value,SUM(a.project_number) number FROM r_science_project a
+                WHERE a.science_year=#{year} GROUP BY academy_name
+    </select>
+
+
+    <!--上面的代码是之前的代码-->
+    <!--科研项目分布-->
+    <select id="scienceProjectDis" resultType="map">
+        SELECT
+            if(project_channel_type_code='','未知',project_channel_type_code) AS channelTypeCode, -- 项目来源渠道代码
+            ifnull(project_channel_type,'未知') AS channelTypeName, -- 项目来源渠道
+            project_company_code AS companyCode, -- 项目所属科研单位代码
+            project_company_name AS companyName, -- 项目所属科研单位
+            project_type AS projectType, -- 项目类型
+            GROUP_CONCAT(DISTINCT project_name) AS projectName, -- 项目名称
+            sum(contract_amount) AS num -- 数量
+        FROM
+            ky_scientific_research_info
+        where status='进行' OR status='完成'
+        GROUP BY project_channel_type,project_company_name,project_type
+    </select>
+
+    <!--科研项目分页-->
+    <select id="scienceProjectInfo" resultType="map">
+        SELECT
+            project_name AS projectName, -- 项目名称
+            project_type AS projectType, -- 项目类型：横向，纵向
+            project_second_type AS projectSecondType, -- 项目二级类型:A类，B类,文科，境外,基础，保障
+            project_research_category AS researchCategory, -- 项目研究类别
+            project_channel_type AS channelTypeName, -- 项目来源渠道
+            project_department AS projectDepartment, -- 项目部门
+            subject_name AS subject, -- 学科方向
+            person_charge AS personCharge, -- 项目负责人
+            project_company_name AS projectCompany, -- 所属单位
+            contract_amount AS contractAmount, -- 总经费
+            contract_start_date AS startDate, -- 开始时间
+            contract_end_date AS endDate, -- 结束时间
+            status AS status -- 状态
+        FROM
+        ky_scientific_research_info
+        <where>
+            <if test="projectType != null and projectType!=''" >
+                AND project_type = #{projectType}
+            </if>
+            <if test="projectSecondType != null and projectSecondType!=''" >
+                AND project_second_type = #{projectSecondType}
+            </if>
+            <if test="researchCategory != null and researchCategory!=''" >
+                AND project_research_category = #{researchCategory}
+            </if>
+            <if test="channelTypeName != null and channelTypeName!=''" >
+                AND project_channel_type = #{channelTypeName}
+            </if>
+            <if test="projectDepartment != null and projectDepartment!=''" >
+                AND project_department = #{projectDepartment}
+            </if>
+            <if test="subject != null and subject!=''" >
+                AND subject_name = #{subject}
+            </if>
+            <if test="personCharge != null and personCharge!=''" >
+                AND person_charge LIKE CONCAT('%', #{personCharge},'%')
+            </if>
+            <if test="projectCompany != null and projectCompany!=''" >
+                AND project_company_name = #{projectCompany}
+            </if>
+            <if test="status != null and status!=''" >
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!--总经费\纵向\横向经费排行榜-->
+    <select id="companyAmountRank" resultType="map">
+        SELECT
+            r.project_company_name AS projectCompany, -- 项目所属科研单位
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        <where>
+            <if test="projectType != null and projectType!=''" >
+                AND r.project_type = #{projectType,jdbcType=VARCHAR}
+            </if>
+            <if test="annual != null and annual!=''" >
+                AND a.annual = #{annual,jdbcType=VARCHAR}
+            </if>
+        </where>
+        GROUP BY r.project_company_name
+        ORDER BY amount ASC
+    </select>
+
+    <!--师均科研经费表-->
+    <select id="scientificTeacherAvg" resultType="map">
+        SELECT
+            project_company_code AS companyCode, -- 科研单位代码
+            project_company_name AS companyName, -- 科研单位名称
+            amount AS amount -- 经费
+        FROM
+            ky_scientific_teacher_average
+        WHERE annual = #{annual,jdbcType=VARCHAR}
+        ORDER BY amount ASC
+    </select>
+
+    <!--本年新增/纵向经费排行榜-->
+    <select id="latestAmountRank" resultType="map">
+        SELECT
+            project_company_name AS projectCompany, -- 项目所属科研单位
+            SUM(contract_amount) AS amount -- 金额
+        FROM
+            ky_scientific_research_info
+        <where>
+            <if test="projectType != null and projectType!=''" >
+                AND project_type = #{projectType,jdbcType=VARCHAR}
+            </if>
+            <if test="annual != null and annual!=''" >
+                AND annual = #{annual,jdbcType=VARCHAR}
+            </if>
+        </where>
+        GROUP BY project_company_name
+        ORDER BY amount ASC
+    </select>
+
+    <!--近年全校科研经费-->
+    <select id="threeYearAmount" resultType="map">
+        SELECT *
+        FROM(
+            SELECT
+                annual AS annual, -- 年度
+                activity_amount AS activity, -- 科技活动经费
+                arrival_amount AS arrival, -- 科研到款额
+                vertical_amount AS vertical, -- 纵向课题经费
+                horizontal_amount AS horizontal, -- 横向课题经
+                A_category_amount AS ACategory, -- A类科研经费
+                B_category_amount AS BCategory -- B类科研经费
+            FROM
+                ky_scientific_research_amount
+            where annual&lt;=year(now())
+            ORDER BY annual DESC
+            LIMIT 5
+        ) a ORDER BY annual
+    </select>
+
+
+    <resultMap id="projectTypeRankMap" type="map">
+        <result column="projectCompany" jdbcType="VARCHAR" property="projectCompany" />
+        <result column="annual" jdbcType="VARCHAR" property="annual" />
+        <collection property="list" ofType="map" column="{projectCompany=projectCompany,annual=annual}" select="getProjectType">
+        </collection>
+    </resultMap>
+    <!--各单位科研经费 -->
+    <select id="projectTypeRank" resultMap="projectTypeRankMap">
+        SELECT
+            r.project_company_name AS projectCompany, -- 项目所属科研单位
+            #{annual} AS annual, -- 年度
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        <where>
+            <if test="annual != null and annual!=''" >
+                AND a.annual = #{annual,jdbcType=VARCHAR}
+            </if>
+        </where>
+        GROUP BY r.project_company_name
+        ORDER BY  amount DESC
+    </select>
+    <!--单个项目类型的数量-->
+    <select id="getProjectType" resultType="map">
+        SELECT
+            r.project_type AS projectType, -- 项目类型
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        WHERE a.annual = #{annual,jdbcType=VARCHAR} AND r.project_company_name=#{projectCompany}
+        GROUP BY r.project_type
+    </select>
+
+    <resultMap id="researchCategoryDistMap" type="map">
+        <result column="projectCompany" jdbcType="VARCHAR" property="projectCompany" />
+        <result column="annual" jdbcType="VARCHAR" property="annual" />
+        <collection property="list" ofType="map" column="{projectCompany=projectCompany,annual=annual}" select="getResearchCategory">
+        </collection>
+    </resultMap>
+    <!--项目研究类别-->
+    <select id="researchCategoryDist" resultMap="researchCategoryDistMap">
+        SELECT
+            r.project_company_name AS projectCompany, -- 项目所属科研单位
+            #{annual} AS annual, -- 年度
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        <where>
+            <if test="annual != null and annual!=''" >
+                AND a.annual = #{annual,jdbcType=VARCHAR}
+            </if>
+        </where>
+        GROUP BY r.project_company_name
+        ORDER BY  amount DESC
+    </select>
+    <!--单个项目研究类别的数量-->
+    <select id="getResearchCategory" resultType="map">
+        SELECT
+            r.project_research_category AS researchCategory, -- 项目研究类别
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        WHERE a.annual =  #{annual,jdbcType=VARCHAR} AND r.project_company_name=#{projectCompany}
+        GROUP BY r.project_research_category
+    </select>
+
+
+    <resultMap id="projectDelayDistMap" type="map">
+        <result column="projectCompany" jdbcType="VARCHAR" property="projectCompany" />
+        <collection property="list" ofType="map" column="projectCompany" select="getDelayType">
+        </collection>
+    </resultMap>
+    <!--各单位资金执行率滞后项目数量 已经移除了-->
+    <select id="projectDelayDist" resultMap="projectDelayDistMap">
+        SELECT
+            project_company AS projectCompany, -- 项目所属科研单位
+            SUM(delay_number) AS num -- 数量
+        FROM
+            ky_project_speed
+        GROUP BY project_company
+        ORDER BY num ASC
+    </select>
+    <!--单个项目滞后项目的数量-->
+    <select id="getDelayType" resultType="map">
+        SELECT
+            project_delay_type AS type, -- 项目滞后类型
+            SUM(delay_number) AS num, -- 数量
+            CASE WHEN project_delay_type='中央高校基本业务费项目' THEN 1
+                WHEN project_delay_type='科技三项费项目' THEN 2
+                WHEN project_delay_type='民机科研项目' THEN 3
+                WHEN project_delay_type='民船科研项目' THEN 4
+                WHEN project_delay_type='两机专项项目' THEN 5
+                WHEN project_delay_type='国防科工局大型设施维护费项目' THEN 6
+                WHEN project_delay_type='国防科工局重点实验室实验室稳定支持经费项目' THEN 7
+                WHEN project_delay_type='科技部国家重点实验室实验室专项经费项目' THEN 8
+            END AS sort
+        FROM ky_project_speed
+        WHERE project_company =#{projectCompany}
+        GROUP BY project_delay_type
+        ORDER BY sort
+    </select>
+
+
+
+    <resultMap id="universityAmountMap" type="map">
+        <result column="university" jdbcType="VARCHAR" property="university" />
+        <collection property="list" ofType="map" column="{university=university,annual=annual}" select="getSignUniversity">
+        </collection>
+    </resultMap>
+    <!--高校科研经费-->
+    <select id="universityAmount" resultMap="universityAmountMap">
+        SELECT
+            university AS university, -- 高校名称
+            #{annual} AS annual, -- 年度
+            SUM(amount) AS amount -- 金额
+        FROM
+            ky_university_amount
+        <where>
+            <if test="annual != null and annual!=''" >
+                AND annual = #{annual,jdbcType=VARCHAR}
+            </if>
+        </where>
+        GROUP BY university
+        ORDER BY amount ASC
+    </select>
+    <!--单个高校的金额-->
+    <select id="getSignUniversity" resultType="map">
+        SELECT
+            type, -- 类型
+            SUM(amount) AS amount, -- 金额
+            CASE WHEN type='国家自然基金项目' THEN 1
+                WHEN type='国家社会基金项目' THEN 2
+                WHEN type='主管部门科技项目' THEN 3
+                WHEN type='国家科技重大专项' THEN 4
+                WHEN type='国家重点研发计划' THEN 5
+                WHEN type='X' THEN 6
+                WHEN type='Y' THEN 7
+            END AS sort
+        FROM ky_university_amount
+        WHERE annual =  #{annual,jdbcType=VARCHAR} AND university =#{university}
+        GROUP BY type
+        ORDER BY sort
+    </select>
+
+    <!--高校经费分页-->
+    <select id="universityAmountPage" resultType="map">
+        SELECT
+            university AS university, -- 高校名称
+            type AS type, -- 项目来源渠道
+            amount AS amount, -- 该年累计经费到款额
+            annual AS annual, -- 年份
+            status AS status -- 状态
+        FROM
+            ky_university_amount
+        <where>
+            <if test="university != null and university!=''" >
+                AND university = #{university}
+            </if>
+            <if test="type != null and type!=''" >
+                AND type = #{type}
+            </if>
+            <if test="annual != null and annual!=''" >
+                AND annual = #{annual}
+            </if>
+            <if test="status != null and status!=''" >
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!--纵向渠道类型金额-->
+    <select id="channelTypeAmount" resultType="map">
+        SELECT
+            r.project_channel_type AS channelType,
+            SUM(a.arrival_amount) AS amount
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        WHERE a.annual = #{annual} AND r.project_type='纵向'
+        GROUP BY r.project_channel_type
+        ORDER BY amount DESC
+    </select>
+
+    <!--纵向部门金额-->
+    <select id="departmentAmount" resultType="map">
+        SELECT
+            r.project_department AS department,
+            SUM(a.arrival_amount) AS amount
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        WHERE a.annual = #{annual}  AND r.project_type='纵向'
+        GROUP BY r.project_department
+        ORDER BY amount DESC
+    </select>
+
+
+
+    <resultMap id="projectChannelAmountMap" type="map">
+        <result column="projectCompany" jdbcType="VARCHAR" property="projectCompany" />
+        <collection property="list" ofType="map" column="{projectCompany=projectCompany,annual=annual}" select="getChannelType">
+        </collection>
+    </resultMap>
+    <!--各单位纵向项目渠道项目金额-->
+    <select id="verticalProChannel" resultMap="projectChannelAmountMap">
+        SELECT
+            r.project_company_name AS projectCompany, -- 项目所属科研单位
+            #{annual} AS annual, -- 年度
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+		WHERE a.annual = #{annual} AND  r.project_type='纵向'
+        GROUP BY r.project_company_name
+        ORDER BY amount ASC
+    </select>
+    <!--单个科研单位的渠道金额-->
+    <select id="getChannelType" resultType="map">
+         SELECT
+            r.project_channel_type AS type, -- 项目滞后类型
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        WHERE a.annual = #{annual} AND r.project_company_name =#{projectCompany} AND r.project_type='纵向'
+        GROUP BY r.project_channel_type
+    </select>
+
+    <!--纵向项目类型排名-图例-->
+    <select id="getChannelTypeLegend" resultType="string">
+        select project_channel_type as name
+        from ky_scientific_research_info
+        WHERE annual = #{annual} and project_channel_type is not null
+        group by project_channel_type order by SUM(contract_amount) desc
+    </select>
+
+
+    <resultMap id="secondTypeMap" type="map">
+        <result column="projectCompany" jdbcType="VARCHAR" property="projectCompany" />
+        <collection property="list" ofType="map" column="{projectCompany=projectCompany,annual=annual,projectType=projectType}" select="getProjectSecondType">
+        </collection>
+    </resultMap>
+    <!--各单位纵向/横向项项目类别统计-->
+    <select id="secondTypeStatistics" resultMap="secondTypeMap">
+        SELECT
+            r.project_company_name AS projectCompany, -- 项目所属科研单位
+            #{annual} AS annual, -- 年度
+            r.project_type AS projectType, -- 项目类型
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+		WHERE a.annual = #{annual}  AND  r.project_type=#{projectType}
+        GROUP BY r.project_company_name
+        ORDER BY amount DESC
+    </select>
+    <!--单个科研单位的项目类别金额-->
+    <select id="getProjectSecondType" resultType="map">
+        SELECT
+            r.project_second_type AS type, -- 项目类别
+            SUM(a.arrival_amount) AS amount -- 金额
+        FROM ky_scientific_research_info r
+        INNER JOIN ky_arrival_amount_info a ON r.project_code=a.project_code
+        WHERE a.annual = #{annual} AND r.project_company_name =#{projectCompany} AND r.project_type=#{projectType}
+        GROUP BY r.project_second_type
+    </select>
+
+    <!--项目详情分页-->
+    <select id="projectDetailPage" resultType="map">
+        SELECT
+            project_name AS projectName, -- 项目名称
+            person_charge AS personCharge, -- 项目负责人
+            subject_name AS subject, -- 学科方向
+            project_company_name AS projectCompany, -- 科研单位
+            status AS status, -- 状态
+            project_type AS projectType, -- 项目类型
+            annual AS annual, -- 立项时间（年度）
+            contract_amount AS amount -- 项目金额
+        FROM
+            ky_scientific_research_info
+        where contract_amount>=1000
+            <if test="projectName != null and projectName!=''" >
+                AND project_name LIKE CONCAT('%', #{projectName},'%')
+            </if>
+            <if test="subject != null and subject!=''" >
+                AND subject_name = #{subject}
+            </if>
+            <if test="projectCompany != null and projectCompany!=''" >
+                AND project_company_name = #{projectCompany}
+            </if>
+            <if test="annual != null and annual!=''" >
+                AND annual = #{annual,jdbcType=VARCHAR}
+            </if>
+    </select>
+
+    <resultMap id="allProjectDisMap" type="map">
+        <result column="projectType" jdbcType="VARCHAR" property="projectType" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="projectCompany" jdbcType="VARCHAR" property="projectCompany" />
+            <result column="date" jdbcType="VARCHAR" property="date" />
+            <result column="amount" jdbcType="VARCHAR" property="amount" />
+            <result column="projectName" jdbcType="VARCHAR" property="projectName" />
+            <result column="subject" jdbcType="VARCHAR" property="subject" />
+            <result column="personCharge" jdbcType="VARCHAR" property="personCharge" />
+            <result column="status" jdbcType="VARCHAR" property="status" />
+        </collection>
+    </resultMap>
+    <!--千万级项目查询resultMap="allProjectDisMap"-->
+    <select id="bigProjectDis" resultType="map">
+        SELECT
+            project_type AS projectType, -- 项目类型
+            project_company_name AS projectCompany, -- 科研单位
+            UNIX_TIMESTAMP(contract_start_date) AS date, -- 合同签订时间
+            contract_amount AS amount, -- 金额
+            project_name AS projectName, -- 项目名称
+            subject_name AS subject, -- 学科方向
+            person_charge AS personCharge, -- 项目负责人
+            status AS status -- 状态
+        FROM
+            ky_scientific_research_info
+        <where>
+            <if test="projectType != null and projectType!=''" >
+                AND project_type = #{projectType}
+            </if>
+            <if test="amount != null and amount!=''" >
+                AND contract_amount &gt;= #{amount}
+            </if>
+            <if test="status != null and status!=''" >
+                AND status = #{status}
+            </if>
+        </where>
+        order by UNIX_TIMESTAMP(contract_start_date)
+    </select>
+</mapper>

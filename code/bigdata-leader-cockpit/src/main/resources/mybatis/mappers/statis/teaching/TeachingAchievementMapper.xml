@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.teaching.TeachingAchievementMapper">
+
+    <!--教材建设:规划教材-->
+    <select id="getPlanningTextbook" resultType="java.util.Map">
+        select planning_type as name,planning_number as value
+        from jx_planning_textbook
+        group by planning_type
+    </select>
+
+    <!--教材建设:历年规划教材情况-->
+    <select id="listPlanningTextbookByAnnual" resultType="java.util.Map">
+        select annual as name,
+        sum(if(planning_type='国家规划教材',planning_number,0)) as nationalPlan,
+        sum(if(planning_type='省部级规划教材',planning_number,0)) as provincialPlan,
+        sum(if(planning_type='校级规划教材',planning_number,0)) as schoolPlan
+        from jx_planning_textbook
+        group by annual
+    </select>
+
+    <!--教材建设:教材选优情况-->
+    <select id="getExcellentTeachingMaterial" resultType="java.util.Map">
+        select excellent_type as name,excellent_number as value
+        from jx_excellent_teaching_material
+        group by excellent_type
+    </select>
+
+    <!--教材建设:教材选新情况-->
+    <select id="getTextbooksSelection" resultType="java.util.Map">
+        select (case selection_time when 1 then '小于等于5年'
+        when 2 then '大于5年小于10年'
+        when 3 then '大于10年小于15年'
+        when 4 then '15年以上' end) as name,selection_number as value
+        from jx_textbooks_selection
+    </select>
+
+    <!--教材建设:优秀教材-->
+    <select id="listExcellentTeachingMaterial" resultType="java.util.Map">
+        select annual as name,
+        sum(if(excellent_type='国家优秀教材',excellent_number,0)) as nationalExcellent,
+        sum(if(excellent_type='省部级优秀教材',excellent_number,0)) as provincialExcellent,
+        sum(if(excellent_type='校级优秀教材',excellent_number,0)) as schoolExcellent
+        from jx_excellent_teaching_material
+        group by annual order by annual desc limit 5
+    </select>
+
+    <!--教材建设:专著情况-->
+    <select id="listAchievementsMonographs" resultType="java.util.Map">
+        select annual as name,
+        sum(if(monographs_type='工信部规划专著',monographs_number,0)) as ministry,
+        sum(if(monographs_type='校级专著出版资金资助',monographs_number,0)) as school
+        from jx_achievements_monographs
+        group by annual order by annual desc limit 5
+    </select>
+
+    <!--本科生教改:教育教学研究与改革项目数量分析-->
+    <select id="getReformProjectNumber" resultType="java.util.Map">
+        <!--select annual as name,
+        sum(if(project_type='国家级',1,0)) as nationalNumber,
+        sum(if(project_type='省部级',1,0)) as provincialNumber
+        from jx_educational_reform_project
+        where project_classification='本科'
+        group by annual order by annual desc limit 5-->
+        select annual as name,
+        count(1) as nationalNumber
+        from jx_educational_reform_project
+        group by annual order by annual desc
+    </select>
+
+    <!--本科生教改:教育教学研究与改革项目经费分析-->
+    <select id="getReformProjectAmount" resultType="java.util.Map">
+        select annual as name,
+        round(sum(if(project_type='国家级',project_amount,0)),2) as nationalAmount,
+        round(sum(if(project_type='省部级',project_amount,0)),2) as provincialAmount
+        from jx_educational_reform_project
+        where project_classification='本科'
+        group by annual order by annual desc limit 5
+    </select>
+
+    <!--本科生教改:各学院教改情况-->
+    <select id="listReformProjectAnnual" parameterType="TeachingAchievementREQ" resultType="java.util.Map">
+        <!--select academy_code,academy_name as name,
+        sum(if(project_type='国家级',1,0)) as nationalNumber,
+        sum(if(project_type='省部级',1,0)) as provincialNumber,
+        round(sum(if(project_type='国家级',project_amount,0)),2) as nationalAmount,
+        round(sum(if(project_type='省部级',project_amount,0)),2) as provincialAmount
+        from jx_educational_reform_project
+        where project_classification='本科'
+        <if test="annual != null and annual != ''">
+            and annual=#{annual}
+        </if>
+        group by academy_code,academy_name-->
+        select academy_name as name,
+        count(1) as nationalNumber
+        from jx_educational_reform_project
+        <where>
+            <if test="annual != null and annual != ''">
+                and annual=#{annual}
+            </if>
+        </where>
+        group by academy_name order by nationalNumber desc
+    </select>
+
+    <!--研究生教改:校级学位与研究生教育研究基金等教改项目-数量-->
+    <select id="getEducationalProjectNumber" resultType="java.util.Map">
+        select annual as name,count(1) as value
+        from jx_educational_reform_project
+        where project_classification='研究生'
+        group by annual order by annual desc limit 5
+    </select>
+
+    <!--研究生教改:校级学位与研究生教育研究基金等教改项目-金额-->
+    <select id="getEducationalProjectAmount" resultType="java.util.Map">
+        select annual as name,round(sum(project_amount),2) as value
+        from jx_educational_reform_project
+        where project_classification='研究生'
+        group by annual order by annual desc limit 5
+    </select>
+
+    <!--研究生教改:各学院教改情况-->
+    <select id="listEducationalProjectAnnual" parameterType="TeachingAchievementREQ" resultType="java.util.Map">
+        select academy_code,academy_name as name,
+        count(1) as schoolNumber,
+        round(sum(project_amount),2) as schoolAmount
+        from jx_educational_reform_project
+        where project_classification='研究生'
+        <if test="annual != null and annual != ''">
+            and annual=#{annual}
+        </if>
+        group by academy_code,academy_name
+    </select>
+
+    <!--教学成果奖:获奖累计值统计-->
+    <select id="getTeachingAchievementAward" parameterType="TeachingAchievementREQ" resultType="java.util.Map">
+        select concat(achievement_rank,achievement_level) as name,count(1) as value
+        from jx_teaching_achievement_award
+        where achievement_rank=#{type}
+        group by concat(achievement_rank,achievement_level)
+    </select>
+
+    <!--教学成果奖:各学院获奖分布-->
+    <select id="listTeachingAchievementAward" parameterType="TeachingAchievementREQ" resultType="java.util.Map">
+        select academy_code,academy_name as name,
+        sum(if(concat(achievement_rank,achievement_level)='国家级一等奖',1,0)) as nationalOne,
+        sum(if(concat(achievement_rank,achievement_level)='国家级二等奖',1,0)) as nationalTwo,
+        sum(if(concat(achievement_rank,achievement_level)='省部级一等奖',1,0)) as provincialOne,
+        sum(if(concat(achievement_rank,achievement_level)='省部级二等奖',1,0)) as provincialTwo,
+        sum(if(concat(achievement_rank,achievement_level)='省部级三等奖',1,0)) as provincialThree,
+        sum(if(concat(achievement_rank,achievement_level)='校级一等奖',1,0)) as socialOne,
+        sum(if(concat(achievement_rank,achievement_level)='校级二等奖',1,0)) as socialTwo,
+        sum(if(concat(achievement_rank,achievement_level)='校级三等奖',1,0)) as socialThree
+        from jx_teaching_achievement_award
+        <where>
+            <if test="annual != null and annual != ''">
+                and annual=#{annual}
+            </if>
+        </where>
+        group by academy_code,academy_name
+    </select>
+
+    <!--研究生创新:研究生创新教育-->
+    <select id="listPostgraduateInnovationYear" resultType="java.util.Map">
+        select school_year as name,
+        sum(if(innovation_type='创新课程',innovation_number,0)) as course,
+        sum(if(innovation_type='创新基地',innovation_number,0)) as base,
+        round(sum(if(innovation_type='创新基金',innovation_number,0)),2) as fund,
+        sum(if(innovation_type='创新竞赛获奖数',innovation_number,0)) as competition
+        from jx_postgraduate_innovation_education
+        group by school_year
+    </select>
+
+    <!--研究生创新:各学院研究生创新教育-->
+    <select id="listPostgraduateInnovationAcademy" resultType="java.util.Map">
+        select academy_code,academy_name as name,
+        sum(if(innovation_type='创新课程',innovation_number,0)) as course,
+        sum(if(innovation_type='创新基地' and school_year=(SELECT max(school_year) FROM jx_postgraduate_innovation_education),innovation_number,0)) as base,
+        round(sum(if(innovation_type='创新基金',innovation_number,0)),2) as fund,
+        sum(if(innovation_type='创新竞赛获奖数',innovation_number,0)) as competition
+        from jx_postgraduate_innovation_education
+        group by academy_code,academy_name
+    </select>
+
+
+</mapper>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.IndexInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemOperationInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="admin_no" property="adminNo" jdbcType="VARCHAR" />
+        <result column="content" property="content" jdbcType="LONGVARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <!--页面指标值-->
+    <select id="indexInfo" resultType="map">
+        SELECT
+            r.index_code AS indexCode, -- 指标编号
+            index_name AS indexName, -- 指标名称
+            index_value AS indexValue, -- 指标值
+            index_unit AS indexUnit, -- 指标对应单位
+            index_description AS indexDescription, -- 指标详细描述
+            show_level_sign AS levelSign, -- 展示等级标识
+            important_sign AS importantSign, -- 带绿标标识
+            position_sign AS positionSign, -- 位置标识(1,占一行,2,占半行)
+            special_sign AS specialSign -- 特殊展示形式标识
+        FROM
+            index_page_relation_info r
+        LEFT JOIN index_basic_info i ON r.index_code = i.index_code
+        WHERE
+            page_code = #{pageCode}
+        ORDER BY
+            r.index_sort
+    </select>
+
+    <!--页面历史指标值-->
+    <select id="historyIndexInfo" resultType="map">
+        SELECT
+            r.index_code AS indexCode, -- 指标编号
+            i.index_name AS indexName, -- 指标名称
+            h.index_value AS indexValue, -- 指标值
+            i.index_unit AS indexUnit, -- 指标对应单位
+            i.index_description AS indexDescription, -- 指标详细描述
+            r.show_level_sign AS levelSign, -- 展示等级标识
+            r.important_sign AS importantSign, -- 带绿标标识
+            position_sign AS positionSign, -- 位置标识(1,占一行,2,占半行)
+            r.special_sign AS specialSign -- 特殊展示形式标识
+        FROM
+            index_page_relation_info r
+        LEFT JOIN index_history_info h ON r.index_code = h.index_code
+        LEFT JOIN index_basic_info i ON r.index_code = i.index_code
+        WHERE
+            page_code =  #{pageCode} AND index_date= #{indexDate}
+        ORDER BY
+            r.index_sort
+    </select>
+
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.AddIndexInfoRequest" >
+        insert into index_basic_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="indexCode != null" >
+                index_code,
+            </if>
+            <if test="indexName != null" >
+                index_name,
+            </if>
+            <if test="indexValue != null" >
+                index_value,
+            </if>
+            <if test="indexUnit != null" >
+                index_unit,
+            </if>
+            <if test="indexDescription != null" >
+                index_description,
+            </if>
+            <if test="indexType != null" >
+                index_type,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="indexCode != null" >
+                #{indexCode,jdbcType=VARCHAR},
+            </if>
+            <if test="indexName != null" >
+                #{indexName,jdbcType=VARCHAR},
+            </if>
+            <if test="indexValue != null" >
+                #{indexValue,jdbcType=VARCHAR},
+            </if>
+            <if test="indexUnit != null" >
+                #{indexUnit,jdbcType=VARCHAR},
+            </if>
+            <if test="indexDescription != null" >
+                #{indexDescription,jdbcType=VARCHAR},
+            </if>
+            <if test="indexType != null" >
+                #{indexType,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <!--获取四级功能点-->
+    <select id="listPageFunctional" resultType="map">
+        select * from sunmnet_page_functional_info
+        where page_code=#{pageCode}
+        order by sort
+    </select>
+
+<!--    &lt;!&ndash;搜索四级功能点&ndash;&gt;
+    <select id="searchFunctional" resultType="map">
+        SELECT
+            m.menu_no AS menuNo, &#45;&#45; 菜单编号唯一标识
+            m.menu_name AS menuName, &#45;&#45; 菜单名称
+            f.page_code AS pageCode, &#45;&#45; 页面组件唯一标识
+            f.identification, &#45;&#45; 四级组件唯一标识
+            f.functional &#45;&#45; 四级组件名称
+        FROM
+            sunmnet_menu_info m
+        JOIN sunmnet_page_functional_info f ON m.menu_url = f.page_code
+        WHERE
+            f.functional LIKE CONCAT('%', #{content}, '%')
+    </select>-->
+
+    <!--搜索三级菜单-->
+    <select id="searchFunctional" resultType="map">
+        SELECT
+            a.menu_no AS twoMenuNo, -- 二级菜单编号唯一标识
+            a.menu_name AS twoMenuName, -- 二级菜单名称
+            a.menu_url AS pageCode, -- 页面组件唯一标识
+            b.menu_no AS threeMenuNo, -- 三级组件唯一标识
+            b.menu_name AS threeMenuName-- 三级组件名称
+        FROM
+		(SELECT * FROM sunmnet_menu_info WHERE menu_level='TWO') a
+        JOIN (SELECT * FROM sunmnet_menu_info WHERE menu_level='THREE') b ON a.menu_no = b.parent_menu_no
+        WHERE
+            b.menu_name LIKE CONCAT('%', #{content}, '%')
+    </select>
+
+    <!--获取目录父级菜单-->
+    <select id="getParentMenu" resultType="map">
+        SELECT
+            m.menu_no AS menuNo, -- 菜单编号唯一标识
+            m.menu_name AS menuName, -- 菜单名称
+            m.parent_menu_no AS parentMenuNo -- 菜单编号唯一标识
+        FROM
+            sunmnet_menu_info m
+        WHERE m.menu_no=#{menuNo}
+    </select>
+
+
+    <!--获取数据报告-->
+    <select id="pageDataSource" resultType="map">
+        SELECT
+            data_department AS dataDepartment, -- 数据源相关部门
+            page_name AS pageName, -- 页面组件文字名称
+            data_synchronize AS dataSynchronize, -- 数据同步时间
+            chart_name AS chartName, -- 统计图名称
+            d.data_type AS dataTypeCode, -- 数据类型
+            s.dict_name AS dataType, -- 数据类型
+            data_question AS dataQuestion -- 数据问题
+        FROM sunmnet_page_data_source d
+        LEFT JOIN (SELECT dict_no,dict_name FROM sunmnet_select_dict_info WHERE dict_type='SYS_SJBG_DATA_TYPE') s ON d.data_type=s.dict_no
+        WHERE page_code = #{menuNo}
+        ORDER BY data_sort ASC
+    </select>
+
+
+
+</mapper>

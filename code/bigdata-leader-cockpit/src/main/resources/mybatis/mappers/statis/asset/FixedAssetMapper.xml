@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.asset.FixedAssetMapper">
+
+
+    <resultMap id="FixedAssetDistributeMap"
+               type="map">
+        <result column="department_code" jdbcType="VARCHAR" property="departmentCode" />
+        <result column="department_name" jdbcType="VARCHAR" property="departmentName" />
+        <collection property="list" javaType="ArrayList" ofType="map">
+            <result column="asset_type" property="assetType"/>
+            <result column="num" property="num"/>
+        </collection>
+    </resultMap>
+
+    <!--各单位固定资产分布 按照资产类型-->
+    <select id="listFixedAssetDistribute" resultMap="FixedAssetDistributeMap">
+        SELECT
+            department_code, -- 部门编号
+            department_name, -- 部门名称
+            asset_type, -- 资产类型
+            SUM(price) AS num -- 资产总数
+        FROM zc_fixed_asset
+        <where>
+            <if test="assetType!=null and assetType!=''">
+                AND asset_type=#{assetType}
+            </if>
+        </where>
+        GROUP BY department_code,department_name,asset_type
+        ORDER BY num
+    </select>
+
+    <!--各单位固定资产分布 按照部门-->
+    <select id="listFixedAssetDisDep" resultMap="FixedAssetDistributeMap">
+        SELECT
+        department_code, -- 部门编号
+        department_name, -- 部门名称
+        SUM(price) AS num -- 资产总数
+        FROM zc_fixed_asset
+        GROUP BY department_code,department_name
+        ORDER BY num
+    </select>
+</mapper>

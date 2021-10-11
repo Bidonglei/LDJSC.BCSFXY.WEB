@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetSystemAdminInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemAdminInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="admin_no" property="adminNo" jdbcType="VARCHAR" />
+        <result column="admin_name" property="adminName" jdbcType="VARCHAR" />
+        <result column="admin_nickname" property="adminNickname" jdbcType="VARCHAR" />
+        <result column="admin_mobile" property="adminMobile" jdbcType="VARCHAR" />
+        <result column="admin_mail" property="adminMail" jdbcType="VARCHAR" />
+        <result column="admin_type" property="adminType" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.AdminTypeEnum" />
+        <result column="admin_status" property="adminStatus" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.AdminStatusEnum" />
+        <result column="admin_password" property="adminPassword" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, admin_no, admin_name, admin_nickname, admin_mobile, admin_mail, admin_type, admin_status, 
+        admin_password, create_time, last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_admin_info
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+	<!--根据管理员手机号查询管理员信息 wm 2018-04-04-->
+ 	<select id="getSystemAdminInfoByAdminMobile" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_admin_info
+        where admin_mobile = #{adminMobile,jdbcType=VARCHAR}
+    </select>
+    
+    <!--根据管理员编号查询管理员信息 wm 2018-04-04-->
+ 	<select id="getSystemAdminInfoByAdminNo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_admin_info
+        where admin_no = #{adminNo,jdbcType=VARCHAR}
+    </select>
+    
+    <!--查询管理员信息列表 wm 2018-04-04-->
+ 	<select id="findSystemAdminInfo" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QuerySystemAdminInfoPageRequest" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_admin_info
+        	where admin_no != 'Admin'
+       		<if test="adminNo != null and adminNo!=''">
+               and  admin_no = #{adminNo,jdbcType=VARCHAR}
+            </if>
+            <if test="adminName != null and adminName!=''" >
+               and  admin_name = #{adminName,jdbcType=VARCHAR}
+            </if>
+            <if test="adminMobile != null and adminMobile!=''" >
+               and  admin_mobile = #{adminMobile,jdbcType=VARCHAR}
+            </if>
+            <if test="adminStatus != null" >
+               and admin_status = #{adminStatus,javaType=AdminStatusEnum}
+            </if>
+	        <if test="startTime!=null and startTime!=''">
+				and create_time <![CDATA[ >= ]]> #{startTime,jdbcType=VARCHAR}
+			</if>
+			<if test="endTime!=null and endTime!=''">
+				and create_time  <![CDATA[ <= ]]>  #{endTime,jdbcType=VARCHAR}
+			</if>
+	        <if test="sort !=null  and  sort!=''">
+				order by ${sort} ${order}
+			</if>
+    </select>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemAdminInfoEntity" >
+        insert into sunmnet_system_admin_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="adminNo != null" >
+                admin_no,
+            </if>
+            <if test="adminName != null" >
+                admin_name,
+            </if>
+            <if test="adminNickname != null" >
+                admin_nickname,
+            </if>
+            <if test="adminMobile != null" >
+                admin_mobile,
+            </if>
+            <if test="adminMail != null" >
+                admin_mail,
+            </if>
+            <if test="adminType != null" >
+                admin_type,
+            </if>
+            <if test="adminStatus != null" >
+                admin_status,
+            </if>
+            <if test="adminPassword != null" >
+                admin_password,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="adminNo != null" >
+                #{adminNo,jdbcType=VARCHAR},
+            </if>
+            <if test="adminName != null" >
+                #{adminName,jdbcType=VARCHAR},
+            </if>
+            <if test="adminNickname != null" >
+                #{adminNickname,jdbcType=VARCHAR},
+            </if>
+            <if test="adminMobile != null" >
+                #{adminMobile,jdbcType=VARCHAR},
+            </if>
+            <if test="adminMail != null" >
+                #{adminMail,jdbcType=VARCHAR},
+            </if>
+            <if test="adminType != null" >
+                #{adminType,javaType=AdminTypeEnum},
+            </if>
+            <if test="adminStatus != null" >
+                #{adminStatus,javaType=AdminStatusEnum},
+            </if>
+            <if test="adminPassword != null" >
+                #{adminPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemAdminInfoEntity" >
+        update sunmnet_system_admin_info
+        <set >
+            <if test="adminNo != null" >
+                admin_no = #{adminNo,jdbcType=VARCHAR},
+            </if>
+            <if test="adminName != null" >
+                admin_name = #{adminName,jdbcType=VARCHAR},
+            </if>
+            <if test="adminNickname != null" >
+                admin_nickname = #{adminNickname,jdbcType=VARCHAR},
+            </if>
+            <if test="adminMobile != null" >
+                admin_mobile = #{adminMobile,jdbcType=VARCHAR},
+            </if>
+            <if test="adminMail != null" >
+                admin_mail = #{adminMail,jdbcType=VARCHAR},
+            </if>
+            <if test="adminType != null" >
+                admin_type = #{adminType,javaType=AdminTypeEnum},
+            </if>
+            <if test="adminStatus != null" >
+                admin_status = #{adminStatus,javaType=AdminStatusEnum},
+            </if>
+            <if test="adminPassword != null" >
+                admin_password = #{adminPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+	<!--根据管理员编号修改管理员状态 wm 2018-04-04 -->
+ 	<update id="updateSystemAdminStatusByAdminNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemAdminInfoEntity" >
+        update sunmnet_system_admin_info
+        	set 
+                admin_status = #{adminStatus,jdbcType=VARCHAR},
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+        where  admin_no = #{adminNo,jdbcType=VARCHAR}
+    </update>
+	<!--修改管理员信息 wm 2018-04-09 -->
+	<update id="updateSystemAdminInfoByAdminNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemAdminInfoEntity" >
+        update sunmnet_system_admin_info
+        <set >
+            <if test="adminName != null" >
+                admin_name = #{adminName,jdbcType=VARCHAR},
+            </if>
+            <if test="adminNickname != null" >
+                admin_nickname = #{adminNickname,jdbcType=VARCHAR},
+            </if>
+            <if test="adminMobile != null" >
+                admin_mobile = #{adminMobile,jdbcType=VARCHAR},
+            </if>
+            <if test="adminMail != null" >
+                admin_mail = #{adminMail,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where admin_no = #{adminNo,jdbcType=VARCHAR}
+    </update>
+    
+	<!--根据管理员编号修改管理员密码 wm 2018-04-06 -->
+ 	<update id="updateSystemAdminPasswordByAdminNo" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemAdminInfoEntity" >
+        update sunmnet_system_admin_info
+        	set 
+                admin_password = #{adminPassword,jdbcType=VARCHAR},
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR}
+        where  admin_no = #{adminNo,jdbcType=VARCHAR}
+    </update>
+    
+
+
+	<!--根据管理员编号删除管理员信息 wm  2018-04-04 -->
+ 	<delete id="deleteSystemAdminInfoByAdminNo" parameterType="java.lang.String" >
+        delete from sunmnet_system_admin_info
+        where admin_no = #{adminNo,jdbcType=VARCHAR}
+    </delete>
+</mapper>

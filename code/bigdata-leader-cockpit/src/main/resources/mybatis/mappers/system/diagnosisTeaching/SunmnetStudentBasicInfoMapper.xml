@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.diagnosisTeaching.SunmnetStudentBasicInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetStudentBasicInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="student_no" property="studentNo" jdbcType="VARCHAR" />
+        <result column="student_name" property="studentName" jdbcType="VARCHAR" />
+        <result column="sex" property="sex" jdbcType="VARCHAR" />
+        <result column="birthday" property="birthday" jdbcType="VARCHAR" />
+        <result column="nation" property="nation" jdbcType="VARCHAR" />
+        <result column="native_place" property="nativePlace" jdbcType="VARCHAR" />
+        <result column="school" property="school" jdbcType="VARCHAR" />
+        <result column="department_no" property="departmentNo" jdbcType="VARCHAR" />
+        <result column="department_name" property="departmentName" jdbcType="VARCHAR" />
+        <result column="major_no" property="majorNo" jdbcType="VARCHAR" />
+        <result column="major_name" property="majorName" jdbcType="VARCHAR" />
+        <result column="class_no" property="classNo" jdbcType="VARCHAR" />
+        <result column="class_name" property="className" jdbcType="VARCHAR" />
+        <result column="enrollment_time" property="enrollmentTime" jdbcType="VARCHAR" />
+        <result column="id_card" property="idCard" jdbcType="VARCHAR" />
+        <result column="address" property="address" jdbcType="VARCHAR" />
+        <result column="telephone" property="telephone" jdbcType="VARCHAR" />
+        <result column="wechat" property="wechat" jdbcType="VARCHAR" />
+        <result column="qq_number" property="qqNumber" jdbcType="VARCHAR" />
+        <result column="father_name" property="fatherName" jdbcType="VARCHAR" />
+        <result column="father_phone" property="fatherPhone" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="grade_name" property="gradeName" jdbcType="VARCHAR" />
+        <result column="educational_system" property="educationalSystem" jdbcType="VARCHAR" />
+        <result column="political_outlook" property="politicalOutlook" jdbcType="VARCHAR" />
+        <result column="photo_url" property="photoUrl" jdbcType="VARCHAR" />
+        <result column="origin_name" property="originName" jdbcType="VARCHAR" />
+        <result column="child" property="child" jdbcType="VARCHAR" />
+        <result column="orphans" property="orphans" jdbcType="VARCHAR" />
+        <result column="special_child" property="specialChild" jdbcType="VARCHAR" />
+        <result column="inschool" property="inschool" jdbcType="INTEGER" />
+    </resultMap>
+
+    <select id="queryRemoteStudentList" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryRemoteStudentListRequest" >
+      select
+      id,
+      code as student_no,
+      name as student_name,
+      if(sex = 1, '男', '女') as sex,
+      birth_date as birthday,
+      ethnic as nation,
+      native_place,
+      '' as school,
+      academy_code as department_no,
+      academy_name as department_name,
+      major_code as major_no,
+      major_name,
+      class_code as class_no,
+      class_name,
+      enrolment_date as enrollment_time,
+      identity_card as id_card,
+      home_addr as address,
+      phone as telephone,
+      '' as wechat,
+      qq_number,
+      father_name,
+      father_phone,
+      '' as create_time,
+      grade as grade_name,
+      educational_system,
+      case political_status when 1 then '中共党员' when 2 then '中共预备党员' when 3 then '共青团员'
+      when 4 then '民革委员' else '群众' end as political_outlook,
+      '' as photo_url,
+      '' as origin_name,
+      '' as child,
+      '' as orphans,
+      '' as special_child,
+      in_school as inschool
+      from basic_student_info
+      where in_school = 1
+      <if test="departmentNo != null and  departmentNo!='' ">
+        and academy_code = #{departmentNo,jdbcType=VARCHAR}
+      </if>
+      <if test="majorNo != null and  majorNo!=''">
+        AND major_code = #{majorNo,jdbcType=VARCHAR}
+      </if>
+      <if test="classNo != null and  classNo!=''">
+        AND class_code = #{classNo,jdbcType=VARCHAR}
+      </if>
+      <if test="student != null and  student!=''" >
+        AND
+        (`name` LIKE CONCAT('%',#{student,jdbcType=VARCHAR},'%' )
+        or `code` = #{student,jdbcType=VARCHAR})
+      </if>
+    </select>
+</mapper>

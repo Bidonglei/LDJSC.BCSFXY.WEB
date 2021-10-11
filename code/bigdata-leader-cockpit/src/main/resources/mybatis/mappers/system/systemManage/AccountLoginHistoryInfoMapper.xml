@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.AccountLoginHistoryInfoMapper" >
+  <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.AccountLoginHistoryInfo" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="account" property="account" jdbcType="VARCHAR" />
+    <result column="login_time" property="loginTime" jdbcType="VARCHAR" />
+  </resultMap>
+  <insert id="insert" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.AccountLoginHistoryInfo" >
+    insert into login_account_history_info (id, account, login_time
+      )
+    values (#{id,jdbcType=INTEGER}, #{account,jdbcType=VARCHAR}, #{loginTime,jdbcType=VARCHAR}
+      )
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select id, account, login_time
+    from login_account_history_info
+  </select>
+
+  <select id="getLoginHistoryByAccount" resultMap="BaseResultMap" >
+    select id, account, login_time
+    from login_account_history_info
+    where account = #{account,jdbcType=VARCHAR}
+  </select>
+
+  <select id="getLoginPersonNum" resultType="Integer" >
+    SELECT COUNT(DISTINCT account) FROM
+    login_account_history_info
+    WHERE login_time &gt;= #{date,jdbcType=VARCHAR}
+  </select>
+
+  <select id="getLoginPersonTime" resultType="Integer" >
+    SELECT COUNT(*) FROM
+      login_account_history_info
+    <where>
+        <if test=" date != null and date !=''">
+            and login_time &gt;= #{date,jdbcType=VARCHAR}
+        </if>
+    </where>
+  </select>
+
+  <select id="getDayPersonTime" resultType="Integer" >
+    SELECT COUNT(*)
+    FROM login_account_history_info
+    WHERE DATE_FORMAT(login_time,'%Y-%m-%d')=#{date,jdbcType=VARCHAR}
+  </select>
+
+</mapper>

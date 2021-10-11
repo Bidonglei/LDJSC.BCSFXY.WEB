@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.OperateLogInfoMapper">
+  <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.OperateLogInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="account" jdbcType="VARCHAR" property="account" />
+    <result column="type" jdbcType="VARCHAR" property="type" />
+    <result column="one_menu_code" jdbcType="VARCHAR" property="oneMenuCode" />
+    <result column="one_menu" jdbcType="VARCHAR" property="oneMenu" />
+    <result column="two_menu_code" jdbcType="VARCHAR" property="twoMenuCode" />
+    <result column="two_menu" jdbcType="VARCHAR" property="twoMenu" />
+    <result column="three_menu_code" jdbcType="VARCHAR" property="threeMenuCode" />
+    <result column="operate_describe" jdbcType="VARCHAR" property="operateDescribe" />
+    <result column="operate_time" jdbcType="VARCHAR" property="operateTime" />
+  </resultMap>
+  <insert id="insert" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.OperateLogInfo">
+    insert into login_operate_log_info (id, name, account,
+      type, one_menu_code,one_menu, two_menu_code,two_menu, three_menu_code,three_menu,operate_describe, operate_time
+      )
+    values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{account,jdbcType=VARCHAR}, 
+      #{type,jdbcType=VARCHAR}, #{oneMenuCode,jdbcType=VARCHAR},#{oneMenu,jdbcType=VARCHAR}, #{twoMenuCode,jdbcType=VARCHAR}, #{twoMenu,jdbcType=VARCHAR}, #{threeMenuCode,jdbcType=VARCHAR}, #{threeMenu,jdbcType=VARCHAR},
+      #{operateDescribe,jdbcType=VARCHAR},  #{operateTime,jdbcType=VARCHAR}
+      )
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap">
+      select name, account, type,operate_describe, operate_time
+      from login_operate_log_info
+      <where>
+          <if test="startTime != null and startTime != ''">
+              and operate_time &gt;= #{startTime}
+          </if>
+          <if test="endTime != null and endTime != ''">
+              and operate_time &lt;= #{endTime}
+          </if>
+          <if test="type != null and type != ''">
+              and type = #{type}
+          </if>
+          <if test="oneMenu != null and oneMenu != ''">
+              and one_menu_code = #{oneMenu}
+          </if>
+          <if test="twoMenu != null and twoMenu != ''">
+              and two_menu_code = #{twoMenu}
+          </if>
+          <if test="nameOrAccount != null and nameOrAccount != ''">
+              and (name like concat('%',#{nameOrAccount},'%') or account like concat('%',#{nameOrAccount},'%') )
+          </if>
+      </where>
+      order by operate_time desc
+  </select>
+</mapper>

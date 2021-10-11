@@ -1,0 +1,1104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.student.StudentProfileMapper">
+	<resultMap id="BaseResultMap"
+		type="com.sunmnet.bigdata.web.model.entity.student.StudentInfo">
+		<result column="student_no" jdbcType="VARCHAR" property="studentNo" />
+		<result column="student_name" jdbcType="VARCHAR" property="studentName" />
+		<result column="gender" jdbcType="VARCHAR" property="gender" />
+		<result column="enroll_date" jdbcType="VARCHAR" property="enrollDate" />
+		<result column="grade" jdbcType="VARCHAR" property="grade" />
+		<result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+		<result column="education_type" jdbcType="VARCHAR" property="educationType" />
+		<result column="province" jdbcType="VARCHAR" property="province" />
+		<result column="academy_code" jdbcType="VARCHAR" property="academyCode" />
+		<result column="academy_short" jdbcType="VARCHAR" property="academyShort" />
+		<result column="academy_name" jdbcType="VARCHAR" property="academyName" />
+		<result column="major_code" jdbcType="VARCHAR" property="majorCode" />
+		<result column="major_name" jdbcType="VARCHAR" property="majorName" />
+		<result column="create_time" jdbcType="VARCHAR" property="createTime" />
+	</resultMap>
+	<sql id="sStudentInfo">
+		student_no, student_name, gender, enroll_date, grade,
+		educate_gradation, education_type,province,academy_code,
+		academy_short,academy_name,major_code,major_name,create_time
+	</sql>
+
+    <resultMap id="studentDistributionMap"
+               type="map">
+        <result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="grade" jdbcType="VARCHAR" property="grade" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+
+    <!-- 在校生分布 -->
+    <select id="studentDistribution"  resultMap="studentDistributionMap">
+        SELECT
+                educate_gradation,'' AS grade,COUNT(*) AS num
+        FROM
+                xs_student_info
+        WHERE educate_gradation = '博士'
+        UNION
+        SELECT educate_gradation,CONCAT(grade,'级') AS grade,COUNT(*) AS num
+        FROM (  SELECT
+                    educate_gradation,
+                    CASE WHEN grade = #{grade} THEN grade
+                    WHEN grade = #{grade} - 1 THEN grade
+                    WHEN grade = #{grade} - 2 THEN grade
+                    ELSE '其他'
+                    END AS grade
+                FROM
+                  xs_student_info
+                WHERE educate_gradation = '硕士') t
+        GROUP BY educate_gradation,grade
+        UNION
+        SELECT
+                educate_gradation,CONCAT(grade,'级') AS grade,COUNT(*) AS num
+        FROM
+                xs_student_info
+        WHERE educate_gradation = '本科'
+        GROUP BY
+            educate_gradation,grade
+    </select>
+
+    <!-- 在校生学院分布 -->
+    <select id="collegeDistribution"  resultType="Map">
+        SELECT
+            educate_gradation AS educateGradation,academy_code AS academyCode,academy_short AS academyShort,academy_name AS academyName,COUNT(*) AS num
+        FROM
+            xs_student_info
+        GROUP BY
+            educate_gradation,academy_code,academy_short,academy_name
+        order by (case educate_gradation when '本科' then 1 when '硕士' then 2 else 3 end),academy_code
+    </select>
+
+    <!-- 本科生学院分布人数 AND education_type!='留学生'-->
+    <select id="undergraduateCollegeDist"  resultType="Map">
+        SELECT
+            academy_code AS academyCode,academy_short AS academyShort,academy_name AS academyName,COUNT(*) AS num
+        FROM
+            xs_student_info
+        WHERE educate_gradation='本科'
+        GROUP BY
+            academy_code,academy_short,academy_name
+    </select>
+
+    <!-- 本科、硕士、博士人数统计-->
+    <select id="studentTotal"  resultType="int">
+        SELECT
+            COUNT(*) AS num
+        FROM
+            xs_student_info
+        WHERE educate_gradation=#{educateGradation}
+        <if test="educationType != null and educationType != ''">
+            AND education_type!=#{educationType}
+        </if>
+    </select>
+
+    <!-- 本科学院人数TOP5  AND education_type!='留学生'-->
+    <select id="undergraduateCollegeTopFive"  resultType="Map">
+        SELECT
+            academy_code AS academyCode,academy_short AS academyShort,academy_name AS academyName,COUNT(*) AS num
+        FROM
+            xs_student_info
+        WHERE educate_gradation='本科'
+        GROUP BY
+            academy_code,academy_short,academy_name
+        ORDER BY num DESC LIMIT 5
+    </select>
+
+    <!-- 本科专业人数TOP5  AND education_type!='留学生'-->
+    <select id="undergraduateMajorTopFive"  resultType="Map">
+        SELECT
+            major_code AS majorCode,major_name AS majorName,COUNT(*) AS num
+        FROM
+            xs_student_info
+        WHERE educate_gradation='本科'
+        GROUP BY
+            major_code,major_name
+        ORDER BY num DESC LIMIT 5
+    </select>
+
+    <!-- 本科生学院下的专业 AND education_type!='留学生'-->
+    <select id="academyMajor"  resultType="Map">
+        SELECT
+            a.majorCode, -- 专业编号
+            a.majorName, -- 专业名称
+            a.num, -- 人数
+            ROUND(a.num /b.total*100, 2) AS rate -- 占比
+        FROM (SELECT
+                  major_code AS majorCode,major_name AS majorName,COUNT(*) AS num
+                FROM
+                  xs_student_info
+                WHERE educate_gradation='本科'
+                <if test="academyCode != null and academyCode != ''">
+                    AND academy_code=#{academyCode}
+                </if>
+                GROUP BY major_code,major_name) a,
+                (SELECT
+                  COUNT(*) AS total
+                FROM xs_student_info
+                WHERE educate_gradation='本科'
+                <if test="academyCode != null and academyCode != ''">
+                    AND academy_code=#{academyCode}
+                </if>) b order by a.num desc
+    </select>
+
+    <!-- 本科生学院下的年级 AND education_type!='留学生'-->
+    <select id="academyAnnual"  resultType="Map">
+        SELECT
+        grade AS grade,COUNT(*) AS num
+        FROM
+        xs_student_info
+        WHERE educate_gradation='本科'
+        <if test="academyCode != null and academyCode != ''">
+            AND academy_code=#{academyCode}
+        </if>
+        GROUP BY
+          grade
+    </select>
+
+    <!-- 本科生学院下的男女 AND education_type!='留学生'-->
+    <select id="academySex"  resultType="Map">
+        SELECT
+        gender AS gender,COUNT(*) AS num
+        FROM
+        xs_student_info
+        WHERE educate_gradation='本科'
+        <if test="academyCode != null and academyCode != ''">
+            AND academy_code=#{academyCode}
+        </if>
+        GROUP BY
+          gender
+    </select>
+
+    <!-- 本科生学院下的少数民族 AND education_type!='留学生'-->
+<!--    <select id="academyNation"  resultType="Map">
+        SELECT
+        nation AS nation,COUNT(*) AS num
+        FROM
+        xs_student_info
+        WHERE educate_gradation='本科'  AND nation!='汉族'
+        <if test="academyCode != null and academyCode != ''">
+            AND academy_code=#{academyCode}
+        </if>
+        GROUP BY
+        nation
+    </select>-->
+    <select id="academyNation"  resultType="Map">
+        SELECT
+            nation,
+            COUNT(*) AS num
+        FROM
+            (SELECT
+            CASE WHEN nation='汉族' THEN '汉族' ELSE '少数民族' END AS nation
+            FROM
+            xs_student_info
+            WHERE educate_gradation='本科'
+            <if test="academyCode != null and academyCode != ''">
+                AND academy_code=#{academyCode}
+            </if>) a
+        GROUP BY nation
+    </select>
+
+    <!-- 本科生学院下的宗教信仰 AND education_type!='留学生'-->
+    <select id="academyReligion"  resultType="Map">
+        SELECT
+        religion AS religion,COUNT(*) AS num
+        FROM
+        xs_student_info
+        WHERE educate_gradation='本科'
+        <if test="academyCode != null and academyCode != ''">
+            AND academy_code=#{academyCode}
+        </if>
+        GROUP BY
+        religion
+    </select>
+
+    <!-- 在校生男女-->
+    <select id="schoolGender"  resultType="Map">
+        SELECT
+          gender AS gender,COUNT(*) AS num
+        FROM
+          xs_student_info
+        GROUP BY gender
+    </select>
+    <!-- 在校生民族-->
+    <select id="schoolNation"  resultType="Map">
+        SELECT
+          nation,
+        COUNT(*) AS num
+        FROM
+            (SELECT
+            CASE WHEN nation='汉族' THEN '汉族' ELSE '少数民族' END AS nation
+            FROM
+            xs_student_info) a
+        GROUP BY nation
+    </select>
+    <!-- 在校生的宗教信仰-->
+    <select id="schoolReligion"  resultType="Map">
+        SELECT
+          religion AS religion,COUNT(*) AS num
+        FROM
+          xs_student_info
+        GROUP BY religion
+    </select>
+    <!-- 在校生的党员情况-->
+    <select id="schoolParty"  resultType="Map">
+        SELECT
+          party AS party,COUNT(*) AS num
+        FROM
+          xs_student_info
+        GROUP BY party
+    </select>
+
+    <resultMap id="masterCategoryMap" type="map">
+        <result column="education_type" jdbcType="VARCHAR" property="educationType" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="education_detail_type" jdbcType="VARCHAR" property="educationDetailType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+
+    <!-- 硕士/博士生类别 -->
+    <select id="masterCategory"  resultMap="masterCategoryMap">
+        SELECT
+        education_type,education_detail_type,COUNT(*) AS num
+        FROM
+        xs_student_info s
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and s.educate_gradation=#{educateGradation}
+            </if>
+        </where>
+        GROUP BY education_type,education_detail_type
+    </select>
+
+<!--    <resultMap id="masterAcademyDisMap" type="map">
+        <result column="academy_code" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academy_short" jdbcType="VARCHAR" property="academyShort" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>-->
+
+    <!--硕士/博士学院分布-->
+    <select id="masterAcademyDis"  resultType="map">
+        SELECT
+            a.academyCode, -- 学院编号
+            a.academyShort, -- 学院名称
+            a.num, -- 人数
+            ROUND(a.num /b.total*100, 2) AS rate -- 占比
+        FROM (SELECT
+          academy_code AS academyCode,academy_short AS academyShort,COUNT(*) AS num
+        FROM
+          xs_student_info
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+        </where>
+        GROUP BY  academy_code,academy_short) a,
+        (SELECT
+          COUNT(*) AS total
+        FROM xs_student_info
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+        </where>) b
+    </select>
+
+
+<!--    <resultMap id="masterMajorDisMap" type="map">
+        <result column="major_code" jdbcType="VARCHAR" property="majorCode" />
+        <result column="major_name" jdbcType="VARCHAR" property="majorName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>-->
+
+    <!--硕士/博士学科/专业结构-->
+    <select id="masterMajorDis"  resultType="map">
+        SELECT
+            a.majorCode, -- 专业编号
+            a.majorName, -- 专业名称
+            a.num, -- 人数
+            ROUND(a.num /b.total*100, 2) AS rate -- 占比
+        FROM (SELECT
+          major_code AS majorCode,major_name AS majorName,COUNT(*) AS num
+        FROM xs_student_info
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+            <if test="educationDetailType != null and educationDetailType != ''">
+                and education_detail_type LIKE CONCAT('%', #{educationDetailType})
+            </if>
+        </where>
+        GROUP BY  major_code,major_name) a,
+        (SELECT
+          COUNT(*) AS total
+        FROM xs_student_info
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+            <if test="educationDetailType != null and educationDetailType != ''">
+                and education_detail_type LIKE CONCAT('%', #{educationDetailType})
+            </if>
+        </where>) b
+    </select>
+
+    <!--地域分布-->
+    <select id="areaDistribute"  resultType="map">
+        SELECT
+          province,COUNT(*) AS num
+        FROM
+          xs_student_info
+        WHERE
+          education_type!='留学生'
+        <if test="educateGradation != null and educateGradation != ''">
+            AND educate_gradation=#{educateGradation}
+        </if>
+        GROUP BY province
+    </select>
+
+    <resultMap id="schoolDistributeMap" type="map">
+        <result column="schoolDistribute" jdbcType="VARCHAR" property="schoolDistribute" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="educateGradation" jdbcType="VARCHAR" property="educateGradation" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 在校生校区分布WHERE education_type!='留学生' -->
+    <select id="schoolDistribute"  resultMap="schoolDistributeMap">
+        SELECT
+            school_distribute AS schoolDistribute, -- 校区分布
+            educate_gradation AS educateGradation, -- 培养层次
+            COUNT(*) AS num -- 人数
+        FROM
+            xs_student_info
+        GROUP BY school_distribute,educate_gradation
+    </select>
+
+    <resultMap id="foreignCategoryMap" type="map">
+        <result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="education_detail_type" jdbcType="VARCHAR" property="educationDetailType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 留学生类别 -->
+    <select id="foreignCategory"  resultMap="foreignCategoryMap">
+        SELECT
+          educate_gradation,education_detail_type,COUNT(*) AS num
+        FROM
+          xs_student_info
+        WHERE
+          education_type='留学生'
+        GROUP BY educate_gradation,education_detail_type
+    </select>
+
+    <select id="foreignTotal"  resultType="int">
+        SELECT
+          COUNT(*) AS num
+        FROM
+          xs_student_info
+        WHERE
+          education_type='留学生'
+    </select>
+
+    <!-- 留学生世界区域分布 -->
+    <select id="foreignArea"  resultType="map">
+        SELECT
+            a.worldArea, -- 所属洲
+            a.num, -- 人数
+            ROUND(a.num /b.total*100, 2) AS rate -- 占比
+        FROM ( SELECT
+                    world_area AS worldArea,COUNT(*) AS num
+                FROM
+                    xs_student_info
+                WHERE
+                    education_type='留学生'
+                GROUP BY world_area) a,
+                ( SELECT
+                        COUNT(*) AS total
+                    FROM
+                        xs_student_info
+                    WHERE
+                        education_type='留学生') b
+        order by (case a.worldArea when '未知' then 2 else 1 end),num desc
+    </select>
+
+    <!-- 留学生学院分布 -->
+    <select id="foreignAcademyDistribute"  resultType="map">
+        SELECT
+            a.academy_short AS academyShort, -- 学院简称
+            a.academy_code AS academyCode, -- 学院编码
+            a.num AS num, -- 留学生人数
+            ROUND(num / totalNum, 4) AS rate -- 国际学生比例
+        FROM (
+                SELECT
+                  academy_code,academy_short,COUNT(*) AS num
+                FROM
+                  xs_student_info
+                WHERE
+                  education_type='留学生'
+                GROUP BY academy_code,academy_short) a
+         JOIN
+                (SELECT
+                  academy_code,academy_short,COUNT(*) AS totalNum
+                FROM
+                  xs_student_info
+                GROUP BY academy_code,academy_short) b ON a.academy_code=b.academy_code
+    </select>
+
+    <!--留学生分布-->
+    <select id="foreignDistribute"  resultType="map">
+        SELECT
+            a.province, -- 所属国家
+            num, -- 人数
+            ROUND(num / total*100, 2) AS rate -- 占比
+        FROM
+            (
+                SELECT
+                    province,COUNT(*) AS num
+                FROM
+                    xs_student_info s
+                WHERE education_type = '留学生'
+                GROUP BY province
+            ) a,
+            (
+                SELECT
+                    COUNT(*) AS total
+                FROM xs_student_info s
+                WHERE education_type = '留学生'
+            ) b ORDER BY rate DESC
+    </select>
+
+    <!--本科生/研究生学籍异常分析-->
+    <select id="anomalyNum" resultType="map">
+        SELECT
+          anomaly_type AS anomalyType,COUNT(*) AS num
+        FROM
+          xs_student_info
+        <where>
+            anomaly_type!='正常'
+            <choose>
+                <when test="educateGradation != null and educateGradation != ''">
+                    AND educate_gradation=#{educateGradation}
+                </when>
+                <otherwise>
+                    AND educate_gradation!='本科'
+                </otherwise>
+            </choose>
+        </where>
+        GROUP BY anomaly_type
+    </select>
+
+    <!--本科生/研究生学籍异常总人数-->
+    <select id="anomalyTotal" resultType="int">
+        SELECT
+            COUNT(*) AS num
+        FROM
+          xs_student_info
+        <where>
+            anomaly_type!='正常'
+            <choose>
+                <when test="educateGradation != null and educateGradation != ''">
+                    AND educate_gradation=#{educateGradation}
+                </when>
+                <otherwise>
+                    AND educate_gradation!='本科'
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <!--&lt;!&ndash;本科生/研究生 学籍异常类型 学生学院分布&ndash;&gt;-->
+    <!--<select id="anomalyAcademyNum" resultType="map">-->
+        <!--SELECT-->
+            <!--a.academyCode, &#45;&#45; 学院编号-->
+            <!--a.academyShort, &#45;&#45; 学院名称-->
+            <!--a.num, &#45;&#45; 异常人数-->
+            <!--ROUND(a.num /b.total*100, 2) AS rate &#45;&#45; 占比-->
+        <!--FROM-->
+            <!--(select academyCode,academyShort,sum(num) as num from (-->
+        <!--SELECT-->
+            <!--academy_code AS academyCode,academy_short AS academyShort,COUNT(*) AS num-->
+            <!--FROM-->
+            <!--xs_student_info-->
+            <!--WHERE anomaly_type=#{anomalyType}-->
+            <!--<choose>-->
+                <!--<when test="educateGradation != null and educateGradation != ''">-->
+                    <!--AND educate_gradation=#{educateGradation}-->
+                <!--</when>-->
+                <!--<otherwise>-->
+                    <!--AND educate_gradation!='本科'-->
+                <!--</otherwise>-->
+            <!--</choose>-->
+            <!--GROUP BY academy_code,academy_short-->
+        <!--union all-->
+        <!--select dict_no as academyCode,dict_name as academyShort,0 as num-->
+        <!--from gg_dict-->
+        <!--where dict_type='academy') a group by academyCode,academyShort-->
+        <!--) a,-->
+            <!--(SELECT-->
+            <!--COUNT(*) AS total-->
+            <!--FROM-->
+            <!--xs_student_info-->
+            <!--WHERE anomaly_type=#{anomalyType}-->
+            <!--<choose>-->
+                <!--<when test="educateGradation != null and educateGradation != ''">-->
+                    <!--AND educate_gradation=#{educateGradation}-->
+                <!--</when>-->
+                <!--<otherwise>-->
+                    <!--AND educate_gradation!='本科'-->
+                <!--</otherwise>-->
+            <!--</choose> ) b-->
+    <!--</select>-->
+
+    <resultMap id="anomalyAcademyNumMap" type="map">
+        <result column="academy_code" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academy_short" jdbcType="VARCHAR" property="academyShort" />
+        <result column="total" jdbcType="VARCHAR" property="total" />
+        <collection property="list" ofType="map" column="{educateGradation=educate_gradation,academyCode=academy_code}" select="getAnomalyAcaDetail">
+        </collection>
+    </resultMap>
+    <!--本科生/研究生 学籍异常类型 学生学院分布 -->
+    <select id="anomalyAcademyNum" resultMap="anomalyAcademyNumMap">
+        SELECT
+          academy_code,academy_short,#{educateGradation} AS educate_gradation,COUNT(*) AS total
+        FROM
+          xs_student_info
+        <where>
+            anomaly_type!='正常'
+            <choose>
+                <when test="educateGradation != null and educateGradation != ''">
+                    AND educate_gradation=#{educateGradation}
+                </when>
+                <otherwise>
+                    AND educate_gradation!='本科'
+                </otherwise>
+            </choose>
+        </where>
+        GROUP BY academy_code,academy_short
+    </select>
+    <!--本科生/研究生  单个学院学籍异常类型分布-->
+    <select id="getAnomalyAcaDetail" resultType="map">
+        SELECT
+          anomaly_type AS anomalyType,COUNT(*) AS num
+        FROM
+          xs_student_info
+        <where>
+            anomaly_type!='正常'
+            <if test="academyCode != null and academyCode != ''">
+                AND academy_code=#{academyCode}
+            </if>
+            <choose>
+                <when test="educateGradation != null and educateGradation != ''">
+                    AND educate_gradation=#{educateGradation}
+                </when>
+                <otherwise>
+                    AND educate_gradation!='本科'
+                </otherwise>
+            </choose>
+        </where>
+        GROUP BY anomaly_type
+    </select>
+    <!--重点关注学生：心理危机类学生总数-->
+    <select id="psyCrisisSitTotal" resultType="int">
+        SELECT
+            ifnull(SUM(num),0) AS total -- 人数
+        FROM xs_psychological_crisis_situation
+        WHERE semester_year = #{semesterYear}
+    </select>
+
+    <resultMap id="psyCrisisSituationMap" type="map">
+        <result column="type" jdbcType="VARCHAR" property="type" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--重点关注学生：心理危机类学生情况-->
+    <select id="psyCrisisSituation" resultMap="psyCrisisSituationMap">
+        SELECT
+            type AS type, -- 心理危机类型：一般危机，潜在危机
+			student_type AS studentType, -- 学生类型：本科生，研究生
+            SUM(num) AS num -- 人数
+        FROM xs_psychological_crisis_situation
+        WHERE semester_year = #{semesterYear}
+        GROUP BY type,student_type
+    </select>
+
+    <resultMap id="psyCrisisAcaDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--重点关注学生：心理危机学生学院分布-->
+    <select id="psyCrisisAcaDis" resultMap="psyCrisisAcaDisMap">
+        SELECT
+            academy_code AS academyCode, -- 学院编码
+            academy_name AS academyName, -- 学院名称
+            student_type AS studentType, -- 学生类型：本科生，研究生
+            SUM(num) AS num -- 人数
+        FROM xs_psychological_crisis_situation
+        WHERE semester_year = #{semesterYear}
+        GROUP BY academy_code,academy_name,student_type
+    </select>
+
+    <!--重点关注学生：本科生学业预警类型 (无用)-->
+    <select id="undergraduateWarnType" resultType="map">
+        SELECT
+            type AS type, -- 学业预警类型：学期不及格学分，学年不及格学分，总不及格学分
+            SUM(num) AS num -- 人数
+        FROM xs_undergraduate_academic_warning
+        WHERE semester_year = #{semesterYear}
+        GROUP BY type
+    </select>
+
+    <!--<resultMap id="undergraduateAcaWarnMap" type="map">-->
+        <!--<result column="academyCode" jdbcType="VARCHAR" property="academyCode" />-->
+        <!--<result column="academyName" jdbcType="VARCHAR" property="academyName" />-->
+        <!--<collection property="list" ofType="map" javaType="ArrayList">-->
+            <!--<result column="type" jdbcType="VARCHAR" property="type" />-->
+            <!--<result column="num" jdbcType="VARCHAR" property="num" />-->
+        <!--</collection>-->
+    <!--</resultMap>-->
+    <!--重点关注学生：学业学分预警学生学院分布 (无用)-->
+    <select id="undergraduateAcaWarn" resultType="map">
+        SELECT
+            academy_code AS academyCode, -- 学院编码
+            academy_name AS academyName, -- 学院名称
+            type AS type, -- 学业预警类型：学期不及格学分，学年不及格学分，总不及格学分
+            SUM(num) AS num -- 人数
+        FROM xs_undergraduate_academic_warning
+        WHERE semester_year = #{semesterYear} AND type='学期不及格学分'
+        GROUP BY academy_code,academy_name
+    </select>
+
+    <!--重点关注学生：学业问题类学生总数-->
+    <select id="getAcademicQueSitNum" resultType="int">
+        SELECT
+        ifnull(SUM(num),0) AS total -- 人数
+        FROM xs_academic_question_situation
+        WHERE semester_year = #{semesterYear}
+    </select>
+
+    <!--重点关注学生：学业问题类学生情况 -->
+    <select id="academicQueSit" resultType="map">
+        SELECT
+            student_type AS type, -- 本科生,研究生
+            ifnull(SUM(num),0) AS num -- 人数
+        FROM xs_academic_question_situation
+        WHERE semester_year = #{semesterYear}
+        GROUP BY student_type
+    </select>
+
+    <resultMap id="academicQueAcaDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--重点关注学生：学业问题类学生学院分布 -->
+    <select id="academicQueAcaDis" resultMap="academicQueAcaDisMap">
+        SELECT
+            academy_code AS academyCode, -- 学院编码
+            academy_name AS academyName, -- 学院名称
+            student_type AS studentType, -- 学生类型：本科生，研究生
+            SUM(num) AS num -- 人数
+        FROM xs_academic_question_situation
+        WHERE semester_year = #{semesterYear}
+        GROUP BY academy_code,academy_name,student_type
+    </select>
+
+    <!--重点关注学生：贫困生总数-->
+    <select id="poorSitTotal" resultType="int">
+        SELECT
+            ifnull(SUM(num),0) AS total -- 人数
+        FROM xs_poor_situation
+        WHERE semester_year = #{semesterYear}
+    </select>
+
+    <resultMap id="poorSituationMap" type="map">
+        <result column="type" jdbcType="VARCHAR" property="type" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--重点关注学生：贫困生情况-->
+    <select id="poorSituation" resultMap="poorSituationMap">
+        SELECT
+            type AS type, -- 贫困生类型：一般困难，困难，特别困难
+			student_type AS studentType, -- 学生类型：本科生，研究生
+            SUM(num) AS num -- 人数
+        FROM xs_poor_situation
+        WHERE semester_year = #{semesterYear}
+        GROUP BY type,student_type
+    </select>
+
+    <resultMap id="poorAcaDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--重点关注学生：贫困生学院分布-->
+    <select id="poorAcaDis" resultMap="poorAcaDisMap">
+        SELECT
+            academy_code AS academyCode, -- 学院编码
+            academy_name AS academyName, -- 学院名称
+            student_type AS studentType, -- 学生类型：本科生，研究生
+            SUM(num) AS num -- 人数
+        FROM xs_poor_situation
+        WHERE semester_year = #{semesterYear}
+        GROUP BY academy_code,academy_name,student_type
+    </select>
+
+    <!--重点关注学生：身体健康预警总数-->
+    <select id="healthWarTotal" resultType="int">
+        SELECT
+            ifnull(SUM(num),0) AS total -- 人数
+        FROM xs_health_warning
+        WHERE semester_year = #{semesterYear}
+    </select>
+    <!--重点关注学生：身体健康预警情况-->
+    <select id="healthWarning" resultType="map">
+        SELECT
+            student_type AS studentType, -- 学生类型：本科生，研究生
+            num -- 人数
+        FROM xs_health_warning
+        WHERE semester_year = #{semesterYear}
+    </select>
+
+    <resultMap id="partyDistributeMap" type="map">
+        <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="partyType" jdbcType="VARCHAR" property="partyType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 学生党员概要-->
+    <select id="partyDistribute"  resultMap="partyDistributeMap">
+        SELECT
+            student_type AS studentType, -- 学生类型：本科生，研究生
+            party_type AS partyType, -- 党员类型：正式党员，预备党员
+            SUM(num) AS num -- 人数
+        FROM
+            xs_party_distribute
+        GROUP BY student_type,party_type
+    </select>
+
+    <!-- 学生党员总数-->
+    <select id="partyTotal"  resultType="int">
+        SELECT
+            SUM(num) AS num -- 人数
+        FROM
+            xs_party_distribute
+    </select>
+
+    <!-- 近五年学生党员人数变化-->
+    <select id="partyChange"  resultType="map">
+        SELECT
+            annual AS annual, -- 年度
+            undergraduate AS undergraduate, -- 本科生学生党员人数
+            graduate AS graduate, -- 研究生学生党员人数
+            total AS total -- 学生党员总人数
+        FROM
+            xs_party_change
+        ORDER BY annual
+        LIMIT 5
+    </select>
+
+    <resultMap id="partyAcademyDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="studentType" jdbcType="VARCHAR" property="studentType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+            <result column="rate" jdbcType="VARCHAR" property="rate" />
+        </collection>
+    </resultMap>
+    <!-- 学生党员学院分布-->
+    <select id="partyAcademyDis"  resultMap="partyAcademyDisMap">
+        SELECT
+                a.academy_code AS academyCode, -- 学院代码
+                a.academy_name AS academyName, -- 学院名称
+                a.student_type AS studentType, -- 学生类型：本科生，研究生
+                num AS num, -- 人数,
+                ROUND(a.num/b.total*100,2) AS rate -- 占比
+        FROM
+            (SELECT
+                academy_code,
+                academy_name,
+                student_type,
+                SUM(num) AS num
+            FROM
+                xs_party_distribute
+            GROUP BY academy_code,academy_name,student_type) a
+        JOIN
+            (SELECT
+                academy_code,
+                academy_name,
+                SUM(num) AS total
+            FROM
+                xs_party_distribute
+            GROUP BY academy_code,academy_name) b ON a.academy_code=b.academy_code AND a.academy_name=b.academy_name
+        UNION
+        SELECT
+                a.academy_code AS academyCode, -- 学院代码
+                a.academy_name AS academyName, -- 学院名称
+                '学院' AS studentType, -- 党员学院占比
+                num AS num, -- 人数,
+                ROUND(a.num/b.total*100,2) AS rate -- 占比
+        FROM
+            (SELECT
+                academy_code,
+                academy_name,
+                SUM(num) AS num
+            FROM
+                xs_party_distribute
+            GROUP BY academy_code,academy_name) a
+        JOIN
+            (SELECT
+                academy_code,
+                academy_short AS academy_name,
+                COUNT(*) AS total
+            FROM
+                xs_student_info
+            GROUP BY academy_code,academy_name) b ON a.academy_code=b.academy_code AND a.academy_name=b.academy_name
+    </select>
+
+    <resultMap id="academyStuDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list" ofType="map" column="academyCode" select="getStudentType" javaType="ArrayList">
+        </collection>
+    </resultMap>
+    <!--各学院人数 -->
+    <select id="academyStuDis" resultMap="academyStuDisMap">
+        SELECT
+            academy_code AS academyCode,
+            academy_short AS academyName,
+            COUNT(*) AS num
+        FROM
+            xs_student_info
+        GROUP BY
+            academy_code,academy_short
+        ORDER BY num DESC
+    </select>
+    <!--单个学院学生类型人数-->
+    <select id="getStudentType" resultType="map">
+        SELECT
+            educate_gradation AS educateGradation, -- 学生类型
+            num, -- 人数
+            ROUND(a.num/b.total*100,2) AS rate -- 占比
+        FROM
+                (SELECT
+                    educate_gradation,
+                    COUNT(*) AS num
+                FROM
+                    xs_student_info WHERE academy_code=#{academyCode}
+                GROUP BY
+                    educate_gradation) a,
+                (SELECT
+                    COUNT(*) AS total
+                FROM
+                    xs_student_info WHERE academy_code=#{academyCode}) b
+    </select>
+
+    <!--本科生结构：各学院人数 -->
+    <select id="academyNum" resultType="map">
+        SELECT
+            academy_code AS academyCode,
+            academy_short AS academyName,
+            COUNT(*) AS total
+        FROM
+            xs_student_info
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+        </where>
+        GROUP BY
+            academy_code,academy_short
+        ORDER BY total DESC
+    </select>
+
+    <!--本科生结构：各学院年级结构对比 -->
+    <select id="getStudentGrade" resultType="map">
+        SELECT
+            grade, -- 学生年级
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM xs_student_info
+        WHERE academy_code=#{academyCode} AND educate_gradation=#{educateGradation}
+        GROUP BY grade
+    </select>
+
+    <!--本科生结构：各学院年级结构对比-图例 -->
+    <select id="getStudentGradeLegend" resultType="String">
+        SELECT grade
+        FROM xs_student_info
+        WHERE educate_gradation='本科'
+        GROUP BY grade
+    </select>
+
+<!--    &lt;!&ndash;本科生结构：各学院性别比例 &ndash;&gt;
+    <select id="getStudentSex" resultType="map">
+        SELECT
+            gender, &#45;&#45; 学生性别
+            COUNT(*) AS num, &#45;&#45; 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate &#45;&#45; 占比
+        FROM xs_student_info
+        WHERE academy_code=#{academyCode} AND educate_gradation=#{educateGradation}
+        GROUP BY gender
+    </select>-->
+
+    <resultMap id="StudentSexMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="gender" jdbcType="VARCHAR" property="gender" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+            <result column="rate" jdbcType="VARCHAR" property="rate" />
+        </collection>
+    </resultMap>
+
+    <!--本科生结构：各学院性别比例 -->
+    <select id="getStudentSex" resultMap="StudentSexMap">
+        SELECT
+            a.academy_code AS academyCode,
+            a.academy_short AS academyName,
+            gender,
+            num,
+            ROUND(num/total*100,2) AS rate
+        FROM
+            (SELECT
+                    academy_code AS academy_code,
+                    academy_short AS academy_short,
+                    gender,
+                    COUNT(*) AS num
+            FROM xs_student_info
+            WHERE educate_gradation=#{educateGradation}
+            GROUP BY academy_code,academy_short,gender) a
+        JOIN
+            (SELECT
+                    academy_code AS academy_code,
+                    academy_short AS academy_short,
+                    COUNT(*) AS total
+            FROM xs_student_info
+            WHERE educate_gradation=#{educateGradation}
+            GROUP BY academy_code,academy_short) b ON a.academy_code=b.academy_code AND a.academy_short=b.academy_short
+        ORDER BY gender DESC,rate DESC
+    </select>
+
+    <!--本科生结构：各学院民族（汉族和少数民族两种）分布情况 -->
+    <select id="getStudentBigNation"  resultType="map">
+        SELECT
+            nation, -- 学生民族
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM
+            (SELECT
+            CASE WHEN nation='汉族' THEN '汉族' ELSE '少数民族' END AS nation
+            FROM
+            xs_student_info
+            WHERE educate_gradation=#{educateGradation} AND academy_code=#{academyCode}) a
+        GROUP BY nation order by rate desc
+    </select>
+
+    <!--本科生结构：各学院民族（所有民族）分布情况 -->
+    <select id="getStudentSmallNation"  resultType="map">
+        SELECT
+          nation AS nation,COUNT(*) AS num
+        FROM
+          xs_student_info
+        WHERE educate_gradation=#{educateGradation} AND academy_code=#{academyCode} AND nation!='汉族'
+        GROUP BY nation
+        ORDER BY num DESC
+    </select>
+
+    <!--本科生结构：各学院宗教信仰（无宗教信仰和有宗教信仰两种）分布情况 -->
+    <select id="getStudentBigReligion"  resultType="map">
+        SELECT
+            religion, -- 学生民族
+            COUNT(*) AS num, -- 人数
+            ROUND(COUNT(*)/#{total}*100,2) AS rate -- 占比
+        FROM
+            (SELECT
+            CASE WHEN nation='无宗教信仰' THEN '无宗教信仰' ELSE '有宗教信仰' END AS religion
+            FROM
+            xs_student_info
+            WHERE educate_gradation=#{educateGradation} AND academy_code=#{academyCode} AND religion!='未知') a
+        GROUP BY religion
+    </select>
+
+    <!--本科生结构：各学院宗教信仰（详细信仰）分布情况 -->
+    <select id="getStudentSmallReligion"  resultType="map">
+        SELECT
+          religion AS religion,COUNT(*) AS num
+        FROM
+          xs_student_info
+        WHERE educate_gradation=#{educateGradation} AND academy_code=#{academyCode} AND religion!='未知'
+        GROUP BY religion
+    </select>
+
+    <!--本科生结构：各学院本科专业数量 -->
+    <select id="academyMajorNum" resultType="map">
+        SELECT
+            academy_code AS academyCode,
+            academy_short AS academyName,
+            COUNT(DISTINCT major_code) AS num
+        FROM
+          xs_student_info
+        where major_name not like '%大类%'
+        <if test="educateGradation != null and educateGradation != ''">
+            and educate_gradation=#{educateGradation}
+        </if>
+        GROUP BY academy_code,academy_short
+        ORDER BY num DESC
+    </select>
+
+    <!--本科生结构：各学院本科专业详情-->
+    <select id="getAcademyMajorDetail"  resultType="map">
+        SELECT
+          DISTINCT major_code AS majorCode,major_name AS majorName
+        FROM
+          xs_student_info
+        WHERE major_name not like '%大类%' and educate_gradation=#{educateGradation} AND academy_code=#{academyCode}
+    </select>
+
+    <!--本科生结构：各本科专业人数 -->
+    <select id="majorPeopleNum" resultType="map">
+        SELECT
+            major_code AS majorCode,
+            major_name AS majorName,
+            COUNT(*) AS num
+        FROM xs_student_info
+        <where>
+            <if test="educateGradation != null and educateGradation != ''">
+                and educate_gradation=#{educateGradation}
+            </if>
+        </where>
+        GROUP BY major_code,major_name
+        ORDER BY num DESC
+    </select>
+</mapper>

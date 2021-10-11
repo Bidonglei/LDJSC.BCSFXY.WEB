@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetPageDataSourceMapper" >
+  <resultMap id="BaseResultMap" type="SunmnetPageDataSource" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="page_code" property="pageCode" jdbcType="VARCHAR" />
+    <result column="page_name" property="pageName" jdbcType="VARCHAR" />
+    <result column="data_department" property="dataDepartment" jdbcType="VARCHAR" />
+    <result column="chart_name" property="chartName" jdbcType="VARCHAR" />
+    <result column="data_type" property="dataType" jdbcType="VARCHAR" />
+    <result column="data_synchronize" property="dataSynchronize" jdbcType="VARCHAR" />
+    <result column="data_status" property="dataStatus" jdbcType="VARCHAR" />
+    <result column="data_question" property="dataQuestion" jdbcType="VARCHAR" />
+    <result column="data_sort" property="dataSort" jdbcType="INTEGER" />
+    <result column="data_judge" property="dataJudge" jdbcType="INTEGER" />
+    <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, page_code, page_name, data_department, chart_name, data_type, data_synchronize, 
+    data_status, data_question, data_sort, data_judge, create_time
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from sunmnet_page_data_source
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from sunmnet_page_data_source
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="SunmnetPageDataSource" >
+    insert into sunmnet_page_data_source (id, page_code, page_name, 
+      data_department, chart_name, data_type, 
+      data_synchronize, data_status, data_question, 
+      data_sort, data_judge, create_time
+      )
+    values (#{id,jdbcType=BIGINT}, #{pageCode,jdbcType=VARCHAR}, #{pageName,jdbcType=VARCHAR}, 
+      #{dataDepartment,jdbcType=VARCHAR}, #{chartName,jdbcType=VARCHAR}, #{dataType,jdbcType=VARCHAR}, 
+      #{dataSynchronize,jdbcType=VARCHAR}, #{dataStatus,jdbcType=VARCHAR}, #{dataQuestion,jdbcType=VARCHAR}, 
+      #{dataSort,jdbcType=INTEGER}, #{dataJudge,jdbcType=INTEGER}, #{createTime,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="SunmnetPageDataSource" >
+    insert into sunmnet_page_data_source
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="pageCode != null" >
+        page_code,
+      </if>
+      <if test="pageName != null" >
+        page_name,
+      </if>
+      <if test="dataDepartment != null" >
+        data_department,
+      </if>
+      <if test="chartName != null" >
+        chart_name,
+      </if>
+      <if test="dataType != null" >
+        data_type,
+      </if>
+      <if test="dataSynchronize != null" >
+        data_synchronize,
+      </if>
+      <if test="dataStatus != null" >
+        data_status,
+      </if>
+      <if test="dataQuestion != null" >
+        data_question,
+      </if>
+      <if test="dataSort != null" >
+        data_sort,
+      </if>
+      <if test="dataJudge != null" >
+        data_judge,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=BIGINT},
+      </if>
+      <if test="pageCode != null" >
+        #{pageCode,jdbcType=VARCHAR},
+      </if>
+      <if test="pageName != null" >
+        #{pageName,jdbcType=VARCHAR},
+      </if>
+      <if test="dataDepartment != null" >
+        #{dataDepartment,jdbcType=VARCHAR},
+      </if>
+      <if test="chartName != null" >
+        #{chartName,jdbcType=VARCHAR},
+      </if>
+      <if test="dataType != null" >
+        #{dataType,jdbcType=VARCHAR},
+      </if>
+      <if test="dataSynchronize != null" >
+        #{dataSynchronize,jdbcType=VARCHAR},
+      </if>
+      <if test="dataStatus != null" >
+        #{dataStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="dataQuestion != null" >
+        #{dataQuestion,jdbcType=VARCHAR},
+      </if>
+      <if test="dataSort != null" >
+        #{dataSort,jdbcType=INTEGER},
+      </if>
+      <if test="dataJudge != null" >
+        #{dataJudge,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="SunmnetPageDataSource" >
+    update sunmnet_page_data_source
+    <set >
+      <if test="pageCode != null" >
+        page_code = #{pageCode,jdbcType=VARCHAR},
+      </if>
+      <if test="pageName != null" >
+        page_name = #{pageName,jdbcType=VARCHAR},
+      </if>
+      <if test="dataDepartment != null" >
+        data_department = #{dataDepartment,jdbcType=VARCHAR},
+      </if>
+      <if test="chartName != null" >
+        chart_name = #{chartName,jdbcType=VARCHAR},
+      </if>
+      <if test="dataType != null" >
+        data_type = #{dataType,jdbcType=VARCHAR},
+      </if>
+      <if test="dataSynchronize != null" >
+        data_synchronize = #{dataSynchronize,jdbcType=VARCHAR},
+      </if>
+      <if test="dataStatus != null" >
+        data_status = #{dataStatus,jdbcType=VARCHAR},
+      </if>
+      <if test="dataQuestion != null" >
+        data_question = #{dataQuestion,jdbcType=VARCHAR},
+      </if>
+      <if test="dataSort != null" >
+        data_sort = #{dataSort,jdbcType=INTEGER},
+      </if>
+      <if test="dataJudge != null" >
+        data_judge = #{dataJudge,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="SunmnetPageDataSource" >
+    update sunmnet_page_data_source
+    set page_code = #{pageCode,jdbcType=VARCHAR},
+      page_name = #{pageName,jdbcType=VARCHAR},
+      data_department = #{dataDepartment,jdbcType=VARCHAR},
+      chart_name = #{chartName,jdbcType=VARCHAR},
+      data_type = #{dataType,jdbcType=VARCHAR},
+      data_synchronize = #{dataSynchronize,jdbcType=VARCHAR},
+      data_status = #{dataStatus,jdbcType=VARCHAR},
+      data_question = #{dataQuestion,jdbcType=VARCHAR},
+      data_sort = #{dataSort,jdbcType=INTEGER},
+      data_judge = #{dataJudge,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+    <select id="listDataSourceByPageCode" resultType="map" >
+        SELECT
+            id AS id, -- 主键ID
+            chart_name AS chartName, -- 统计图名称
+            d.data_type AS dataTypeCode, -- 数据类型编码
+            s.dict_name AS dataType, -- 数据类型
+            data_synchronize AS dataSynchronize, -- 数据同步时间
+            data_question AS dataQuestion -- 数据问题
+        FROM sunmnet_page_data_source d
+        LEFT JOIN (SELECT dict_no,dict_name FROM sunmnet_select_dict_info WHERE dict_type='SYS_SJBG_DATA_TYPE') s ON d.data_type=s.dict_no
+        WHERE page_code = #{pageCode,jdbcType=VARCHAR}
+        ORDER BY data_sort ASC
+    </select>
+</mapper>

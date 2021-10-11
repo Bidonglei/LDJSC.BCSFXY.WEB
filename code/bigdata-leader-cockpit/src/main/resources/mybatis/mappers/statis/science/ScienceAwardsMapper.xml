@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.science.ScienceAwardsMapper">
+
+    <!--国家奖-历史获奖-扇形图-->
+    <select id="listHistoryNationalAward" resultType="java.util.Map">
+        select award_type as name,count(1) as value
+        from ky_award_info
+        where award_rank='国家级'
+        group by award_type order by value
+    </select>
+
+    <!--国家奖-历史获奖-柱图sum(if(award_type='中华人民共和国国际科学技术合作奖',1,0)) as internationalTechnicalAward,-->
+    <select id="listHistoryNationalByYear" resultType="java.util.Map">
+        select left(award_time,4) as name,
+        sum(if(award_type='国家最高科学技术奖',1,0)) as topTechnologyAward,
+        sum(if(award_type='国家自然科学奖',1,0)) as naturalScienceAward,
+        sum(if(award_type='国家技术发明奖',1,0)) as technologyInventionAward,
+        sum(if(award_type='国家科学技术进步奖',1,0)) as technologyProgressAward,
+        count(1) as sumValue
+        from ky_award_info
+        where award_rank='国家级'
+        group by left(award_time,4) order by name
+    </select>
+
+    <!--国家奖列表-->
+    <select id="listNationalAwardInfo" parameterType="ScienceAwardsREQ" resultType="java.util.Map">
+        select
+        award_rank as awardRank,
+        award_level as awardLevel,
+        award_type as awardType,
+        teacher_name as teacherName,
+        award_name as awardName,
+        award_time as awardTime,
+        department_code as departmentCode,
+        department_name as departmentName
+        from ky_award_info
+        <where>
+            <if test="year != null and year != ''">
+                and left(award_time,4)=#{year}
+            </if>
+            <if test="awardRank != null and awardRank != ''">
+                and award_rank=#{awardRank}
+            </if>
+            <if test="awardType != null and awardType != ''">
+                and award_type=#{awardType}
+            </if>
+        </where>
+        order by award_time desc
+    </select>
+
+    <!--省部级奖及社会奖-总体情况-->
+    <select id="listProvincialAwardInfo" parameterType="ScienceAwardsREQ" resultType="java.util.Map">
+        select award_type as name,count(1) as value
+        from ky_award_info
+        where (award_rank='省部级' or award_rank='社会奖')
+        <if test="awardRank != null and awardRank != ''">
+            and award_level=#{awardRank}
+        </if>
+        <if test="year != null and year != ''">
+            and left(award_time,4) between #{year} and #{year}+4
+        </if>
+        group by award_type
+        order by value desc,(case award_type when '社会奖项'then 2 else 1 end)
+    </select>
+
+    <!--省部级奖及社会奖-历史获奖-->
+    <select id="listHistoryProvincialAward" resultType="java.util.Map">
+        select left(award_time,4) as name,
+        sum(if(award_type='陕西省奖',1,0)) as provincialAward,
+        sum(if(award_type='国防奖',1,0)) as nationalDefenseAward,
+        sum(if(award_type='军队奖',1,0)) as armyAward,
+        sum(if(award_type='教育部奖',1,0)) as educationAward,
+        count(1) as sumValue
+        from ky_award_info
+        where award_rank='省部级'
+        group by left(award_time,4) order by name
+    </select>
+
+    <!--省部级奖及社会奖-学院获奖分布-->
+    <select id="listProvincialAwardByAcademy" parameterType="ScienceAwardsREQ" resultType="java.util.Map">
+        select department_name as name,
+        sum(if(award_type='陕西省奖',1,0)) as provincialAward,
+        sum(if(award_type='国防奖',1,0)) as nationalDefenseAward,
+        sum(if(award_type='军队奖',1,0)) as armyAward,
+        sum(if(award_type='教育部奖',1,0)) as educationAward
+        from ky_award_info
+        where award_rank='省部级'
+        <if test="year != null and year != ''">
+            and left(award_time,4)=#{year}
+        </if>
+        group by department_name order by count(1) desc
+    </select>
+
+    <!--近五年成果转化趋势-->
+    <select id="listAchievementsConversionByYear" resultType="java.util.Map">
+        select year as name,round(sum(output_amount),2) as outputAmount,
+        sum(conversion_number) as conversionNumber
+        from ky_achievements_conversion
+        group by year
+    </select>
+
+    <!--成果转化分布-->
+    <select id="listAchiConversionBydepart" parameterType="ScienceAwardsREQ" resultType="java.util.Map">
+        select department_name as name,round(sum(output_amount),2) as outputAmount,
+        sum(conversion_number) as conversionNumber
+        from ky_achievements_conversion
+        <where>
+            <if test="year != null and year != ''">
+                and year=#{year}
+            </if>
+        </where>
+        group by department_name order by outputAmount desc
+    </select>
+
+    <!--各学院国家奖任务指标及完成数量-->
+    <select id="listIndicatorsCompleted" parameterType="ScienceAwardsREQ" resultType="java.util.Map">
+        select department_name as name,
+        indicators_number as indicatorsNumber,
+        award_number as awardNumber
+        from ky_indicators_completed
+        <where>
+            <if test="year != null and year != ''">
+                and year between #{year} and #{year}+4
+            </if>
+        </where>
+        order by awardNumber+0 desc
+    </select>
+
+    <!--国家级奖项高校对比/列表-->
+    <select id="listUniversityNationalAwards" parameterType="ScienceAwardsREQ" resultType="java.util.Map">
+        select
+        school_name as name,
+        sum(award_sum) as awardSum,
+        sum(top_technology_award) as topTechnologyAward,
+        sum(natural_science_award) as naturalScienceAward,
+        sum(technology_invention_award) as technologyInventionAward,
+        sum(technology_progress_award) as technologyProgressAward,
+        sum(international_technical_cooperation_award) as internationalTechnicalAward
+        from ky_university_awards_comparison
+        <where>
+            <if test="year != null and year != ''">
+                and year between #{year} and #{year}+4
+            </if>
+        </where>
+        group by school_name order by awardSum desc
+    </select>
+
+    <!--各学院培育项目当年完成度-->
+    <select id="listAcademyComplete" resultType="java.util.Map">
+        SELECT
+        department_code AS departmentCode, -- 学院代码
+        department_name AS departmentName, -- 学院名称
+        round(avg(completion_degree),2) AS completionDegree -- 完成度
+        FROM ky_nurturing_plan_completion
+        where completion_degree!=100 and left(annual,4)&lt;=year(CURRENT_DATE)
+        group by department_code,department_name
+        ORDER BY completion_degree DESC
+    </select>
+
+    <!--当年各项目培育完成度(负责人)-->
+    <select id="listChargeComplete" resultType="java.util.Map">
+        SELECT
+        person_name AS personName, -- 负责人
+        project_name AS projectName, -- 项目名称
+        completion_degree AS completionDegree -- 完成度
+        FROM ky_nurturing_plan_completion
+        where completion_degree!=100 and left(annual,4)&lt;=year(CURRENT_DATE)
+        <if test="departmentName != null and departmentName != ''">
+            and department_name=#{departmentName}
+        </if>
+        ORDER BY completion_degree DESC
+    </select>
+
+    <resultMap id="nurturingPlanAndDeclare" type="java.util.Map">
+        <result column="year" jdbcType="VARCHAR" property="year"/>
+        <collection property="list" ofType="java.util.Map" javaType="ArrayList">
+            <result column="name" jdbcType="VARCHAR" property="name"/>
+            <result column="value" jdbcType="INTEGER" property="value"/>
+        </collection>
+    </resultMap>
+    <!--国家奖五年培育计划及完成情况-->
+    <select id="listNurturingPlanAndDeclare" resultMap="nurturingPlanAndDeclare">
+        <!--select left(annual,4) as year,
+        count(1) as planNum,
+        count(if(is_declare=1,1,null)) as declareNum
+        from ky_nurturing_plan_completion
+        group by left(annual,4)-->
+        select left(annual,4) as year,
+        '计划培育项目数' as name,
+        count(1) as value
+        from ky_nurturing_plan_completion
+        group by left(annual,4)
+        union all
+        select left(annual,4) as year,
+        '申报数' as name,
+        count(if(is_declare=1,1,null)) as value
+        from ky_nurturing_plan_completion
+        group by left(annual,4)
+    </select>
+    <!--国家奖五年培育计划及完成情况清单-->
+    <select id="listNurturingPlanCompletion" parameterType="NurturingPlanREQ" resultType="java.util.Map">
+        select project_name as projectName,
+        person_name as personName,
+        department_name as departmentName,
+        completion_degree as completionDegree,
+        annual,
+        completion_time as completionTime
+        from ky_nurturing_plan_completion
+        <where>
+            <if test="annual != null and annual != ''">
+                and left(annual,4)=#{annual}
+            </if>
+            <if test="departmentName != null and departmentName != ''">
+                and department_name=#{departmentName}
+            </if>
+        </where>
+        order by annual desc
+    </select>
+    <resultMap id="fiveYearNurturingPlan" type="java.util.Map">
+        <result column="departmentName" jdbcType="VARCHAR" property="departmentName"/>
+        <collection property="list" ofType="java.util.Map" javaType="ArrayList">
+            <result column="planType" jdbcType="VARCHAR" property="planType"/>
+            <result column="planNum" jdbcType="INTEGER" property="planNum"/>
+        </collection>
+    </resultMap>
+    <!--国家奖各学院五年规划情况-->
+    <select id="listFiveYearNurturingPlan" resultMap="fiveYearNurturingPlan">
+        select department_name as departmentName,
+        left(annual,4) as planType,
+        count(1) as planNum
+        from ky_nurturing_plan_completion
+        where left(annual,4) BETWEEN year(CURRENT_DATE) AND year(CURRENT_DATE)+4
+        group by department_code,department_name,left(annual,4)
+        union all
+        select department_name as departmentName,
+        '计划培育项目总数' as planType,
+        count(1) as planNum
+        from ky_nurturing_plan_completion
+        where left(annual,4) BETWEEN year(CURRENT_DATE) AND year(CURRENT_DATE)+4
+        group by department_code,department_name
+    </select>
+
+    <!--国家奖各学院五年规划情况-图例-->
+    <select id="listFiveYearLegend" resultType="String">
+        select left(annual,4) as name
+        from ky_nurturing_plan_completion
+        where left(annual,4) BETWEEN year(CURRENT_DATE) AND year(CURRENT_DATE)+4
+        group by left(annual,4)
+        union all select '计划培育项目总数' as name
+    </select>
+
+
+</mapper>

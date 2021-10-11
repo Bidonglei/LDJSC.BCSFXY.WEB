@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.LookAnalysisInfoMapper">
+  <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.LookAnalysisInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="account" jdbcType="VARCHAR" property="account" />
+    <result column="one_menu_code" jdbcType="VARCHAR" property="oneMenuCode" />
+    <result column="one_menu" jdbcType="VARCHAR" property="oneMenu" />
+    <result column="two_menu_code" jdbcType="VARCHAR" property="twoMenuCode" />
+    <result column="two_menu" jdbcType="VARCHAR" property="twoMenu" />
+    <result column="three_menu_code" jdbcType="VARCHAR" property="threeMenuCode" />
+    <result column="three_menu" jdbcType="VARCHAR" property="threeMenu" />
+    <result column="time" jdbcType="VARCHAR" property="time" />
+  </resultMap>
+  <insert id="insert" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.LookAnalysisInfo">
+    insert into login_look_analysis_info (id, name, account,
+      one_menu_code,one_menu, two_menu_code,two_menu, three_menu_code,three_menu,
+      time)
+    values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{account,jdbcType=VARCHAR}, 
+      #{oneMenuCode,jdbcType=VARCHAR},#{oneMenu,jdbcType=VARCHAR}, #{twoMenuCode,jdbcType=VARCHAR}, #{twoMenu,jdbcType=VARCHAR}, #{threeMenuCode,jdbcType=VARCHAR}, #{threeMenu,jdbcType=VARCHAR},
+      #{time,jdbcType=VARCHAR})
+  </insert>
+  <select id="selectAll" resultMap="BaseResultMap">
+    select id, name, account, one_menu, two_menu, three_menu, time
+    from login_look_analysis_info
+  </select>
+
+  <select id="getOneStatistics" resultType="map">
+      SELECT one_menu AS name, COUNT(*) AS num
+      FROM login_look_analysis_info l
+      LEFT JOIN sunmnet_menu_info m ON l.one_menu_code=m.menu_no
+      <where>
+          <if test="startTime != null and startTime != ''">
+              AND time &gt;= #{startTime}
+          </if>
+          <if test="endTime != null and endTime != ''">
+              AND time &lt;= #{endTime}
+          </if>
+          <if test="nameOrAccount != null and nameOrAccount != ''">
+              AND (name LIKE concat('%',#{nameOrAccount},'%') OR account LIKE concat('%',#{nameOrAccount},'%') )
+          </if>
+      </where>
+      GROUP BY one_menu
+      ORDER BY CONVERT(menu_sort_no,SIGNED) ASC
+  </select>
+
+  <select id="getThreeStatistics" resultType="map">
+      SELECT three_menu AS name, COUNT(*) AS num
+      FROM login_look_analysis_info l
+      LEFT JOIN sunmnet_menu_info m ON l.three_menu_code=m.menu_no
+      <where>
+          <if test="startTime != null and startTime != ''">
+              AND time &gt;= #{startTime}
+          </if>
+          <if test="endTime != null and endTime != ''">
+              AND time &lt;= #{endTime}
+          </if>
+          <if test="oneMenu != null and oneMenu != ''">
+              AND one_menu_code = #{oneMenu}
+          </if>
+          <if test="nameOrAccount != null and nameOrAccount != ''">
+              AND (name LIKE concat('%',#{nameOrAccount},'%') OR account LIKE concat('%',#{nameOrAccount},'%') )
+          </if>
+      </where>
+      GROUP BY three_menu
+      ORDER BY CONVERT(menu_sort_no,SIGNED) ASC
+  </select>
+</mapper>

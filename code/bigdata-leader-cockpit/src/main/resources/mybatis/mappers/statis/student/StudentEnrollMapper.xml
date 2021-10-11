@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.student.StudentEnrollMapper">
+    <!--获取最近的录取年份-->
+    <select id="maxAnnual" resultType="int">
+        SELECT MAX(enroll_year) FROM xs_student_enroll
+    </select>
+
+    <!--本科生各专业招生-->
+    <select id="undergraduateEnrollMajor" resultType="map">
+        SELECT
+            a.majorCode, -- 专业编号
+            a.majorName, -- 专业名称
+            a.num, -- 异常人数
+            ROUND(a.num /b.total*100, 2) AS rate -- 占比
+        FROM(
+                SELECT
+                        major_code AS majorCode,
+                        major_name AS majorName,
+                        COUNT(*) AS num
+                FROM
+                        xs_student_enroll
+                WHERE
+                        educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+                GROUP BY major_code,major_name) a,
+                (SELECT
+                        COUNT(*) AS total
+                FROM
+                        xs_student_enroll
+                WHERE
+                        educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}) b
+    </select>
+
+    <!--本科生各学院招生-->
+    <select id="undergraduateEnrollAcademy" resultType="map">
+        SELECT
+            a.academyCode, -- 学院编号
+            a.academyShort, -- 学院名称
+            a.num, -- 异常人数
+            ROUND(a.num /b.total*100, 2) AS rate -- 占比
+        FROM(
+                SELECT
+                        academy_code AS academyCode,
+                        academy_short AS academyShort,
+                        COUNT(*) AS num
+                FROM
+                        xs_student_enroll
+                WHERE
+                        educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+                GROUP BY academy_code,academy_short) a,
+                (SELECT
+                        COUNT(*) AS total
+                FROM
+                        xs_student_enroll
+                WHERE
+                        educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}) b
+</select>
+
+    <!--近五年本科生招生-->
+    <select id="undergraduateFiveEnroll" resultType="map">
+        SELECT
+            enroll_year AS enrollYear,
+            plan_num AS planNum,
+			actual_num AS actualNum
+        FROM
+            xs_student_enroll_statistic
+        WHERE
+            educate_gradation = #{educateGradation}
+        ORDER BY enroll_year DESC LIMIT 5
+    </select>
+
+    <!--本科生招生生源-->
+    <select id="undergraduateOriginEnroll" resultType="map">
+        SELECT
+            origin AS origin,
+            COUNT(*) AS num
+        FROM
+            xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+        GROUP BY origin
+        ORDER BY num DESC
+    </select>
+
+    <resultMap id="provinceSourceTypeMap" type="map">
+        <result column="origin" jdbcType="VARCHAR" property="origin" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="sourceType" jdbcType="VARCHAR" property="sourceType" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 全国各省份生源类别 -->
+    <select id="provinceSourceType"  resultMap="provinceSourceTypeMap">
+        SELECT
+            origin AS origin, -- 生源省份
+            source_type AS sourceType, -- 生源类别
+            COUNT(*) AS num -- 数量
+        FROM
+            xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+        GROUP BY origin,source_type
+    </select>
+
+    <!-- 全国生源类别 -->
+    <select id="sourceType"  resultType="map">
+        SELECT
+            source_type AS sourceType, -- 生源类别
+            COUNT(*) AS num -- 数量
+        FROM
+            xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+        GROUP BY source_type
+        ORDER BY num DESC
+    </select>
+
+    <resultMap id="provinceMiddleSchoolMap" type="map">
+        <result column="origin" jdbcType="VARCHAR" property="origin" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="middleSchool" jdbcType="VARCHAR" property="middleSchool" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 全国各省份中学 -->
+    <select id="provinceMiddleSchool"  resultMap="provinceMiddleSchoolMap">
+        SELECT
+            origin AS origin, -- 生源省份
+            middle_school AS middleSchool, -- 中学名称
+            COUNT(*) AS num -- 数量
+        FROM
+            xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+        GROUP BY origin,middle_school
+        ORDER BY origin,num DESC
+    </select>
+
+    <!-- 全国中学TOP10 -->
+    <select id="middleSchoolTopTen"  resultType="map">
+        SELECT
+            middle_school AS middleSchool, -- 中学名称
+            COUNT(*) AS num -- 数量
+        FROM
+            xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+        GROUP BY middle_school
+        ORDER BY num DESC
+		LIMIT 10
+    </select>
+
+    <!-- 硕士/博士生招生结构 -->
+    <select id="masterStructure"  resultType="map">
+        SELECT
+                enroll_type AS enrollType, -- 招生类型
+                COUNT(*) AS num -- 人数
+        FROM
+                xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+        GROUP BY enroll_type
+    </select>
+
+    <!-- 硕士/博士生招生人数 -->
+    <select id="masterStructureTotal"  resultType="int">
+        SELECT
+                COUNT(*) AS num -- 人数
+        FROM
+                xs_student_enroll
+        WHERE
+            educate_gradation = #{educateGradation} AND education_type!=#{educationType} AND enroll_year=#{year}
+    </select>
+
+
+    <resultMap id="masterFiveEnrollMap" type="map">
+        <result column="enroll_year" jdbcType="VARCHAR" property="enrollYear" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+            <result column="actual_num" jdbcType="VARCHAR" property="actualNum" />
+        </collection>
+    </resultMap>
+    <!-- 研究生近五年招生趋势 -->
+    <select id="masterFiveEnroll"  resultMap="masterFiveEnrollMap">
+        SELECT
+            enroll_year, -- 招生年份
+			educate_gradation, -- 培养层次
+			actual_num -- 招生实际人数
+        FROM
+            xs_student_enroll_statistic
+        WHERE
+            educate_gradation != #{educateGradation}
+        ORDER BY enroll_year DESC LIMIT 10
+    </select>
+
+
+    <resultMap id="masterEnrollMajorMap" type="map">
+        <result column="major_code" jdbcType="VARCHAR" property="majorCode" />
+        <result column="major_name" jdbcType="VARCHAR" property="majorName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="educate_gradation" jdbcType="VARCHAR" property="educateGradation" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!-- 研究生各学科招生情况 -->
+    <select id="masterEnrollMajor"  resultMap="masterEnrollMajorMap">
+        SELECT
+            major_code, -- 学科编号
+            major_name, -- 学科名称
+			educate_gradation, -- 培养层次：硕士，博士
+            COUNT(*) AS num  -- 人数
+        FROM
+            xs_student_enroll
+        WHERE
+            educate_gradation != #{educateGradation} AND education_type!=#{educationType}
+            AND enroll_year=#{year} AND education_detail_type LIKE CONCAT('%', #{educationDetailType})
+        GROUP BY major_code,major_name,educate_gradation
+    </select>
+    <!--硕士学源分析(学院)-->
+    <select id="masterSourceAcademy" resultType="map">
+        SELECT
+                academy_code AS academyCode, -- 学院编号
+                academy_short AS academyShort, -- 学院简称
+                from_school_type AS fromSchoolType, -- 来源学校类型
+                COUNT(*) AS num
+        FROM
+                xs_student_enroll
+        where educate_gradation != '本科'
+        <if test="year != null and year !=''">
+            and enroll_year=#{year}
+        </if>
+        <if test="educateGradation != null and educateGradation !=''">
+            and educate_gradation = #{educateGradation}
+        </if>
+        <if test="educationType != null and educationType !=''">
+            AND education_type!=#{educationType}
+        </if>
+        GROUP BY academy_code,academy_short,from_school_type
+        order by (case from_school_type when '西工大' then 1 when '其他985高校' then 2 when '211高校' then 3 when '其他' then 4 else 5 end),academy_code
+    </select>
+    <!--硕士学源分析(学科)-->
+    <select id="masterSourceMajor" resultType="map">
+        SELECT
+                major_code AS majorCode, -- 学科编号
+                major_name AS majorName, -- 学科名称
+                from_school_type AS fromSchoolType, -- 来源学校类型
+                COUNT(*) AS num -- 人数
+        FROM
+                xs_student_enroll
+        where educate_gradation != '本科' and education_detail_type like '%学术%'
+        <if test="year != null and year !=''">
+            and enroll_year=#{year}
+        </if>
+        <if test="educateGradation != null and educateGradation !=''">
+            and educate_gradation = #{educateGradation}
+        </if>
+        <if test="educationType != null and educationType !=''">
+            AND education_type!=#{educationType}
+        </if>
+        GROUP BY major_code,major_name,from_school_type
+        order by (case from_school_type when '西工大' then 1 when '其他985高校' then 2 when '211高校' then 3 when '其他' then 4 else 5 end),major_code
+    </select>
+    <!--留学生招生分布-->
+    <select id="foreignEnrollDistribute" resultType="map">
+        SELECT
+            a.origin, -- 所属国家
+            num, -- 人数
+            ROUND(num /total*100, 2) AS rate -- 占比
+        FROM
+            (
+                SELECT
+                    origin,COUNT(*) AS num
+                FROM
+                    xs_student_enroll s
+                WHERE education_type = #{educationType} AND enroll_year=#{year}
+                GROUP BY origin
+            ) a,
+            (
+                SELECT
+                    COUNT(*) AS total
+                FROM xs_student_enroll s
+                WHERE education_type = #{educationType} AND enroll_year=#{year}
+            ) b ORDER BY rate DESC LIMIT 10
+    </select>
+
+    <!--本科生招生质量-->
+    <select id="undergraduateEnrollQuality" resultType="map">
+        SELECT
+			t.origin AS origin, -- 生源地
+            CAST(MIN(student_score) AS DECIMAL) AS min, -- 最小值
+            CAST(MAX(student_score) AS DECIMAL) AS max, -- 最大值
+			CAST(AVG(student_score) AS DECIMAL) AS avg, -- 平均值
+            GROUP_CONCAT(student_score) AS sort  -- 省份下的排名
+        FROM xs_student_enroll t
+        left join gg_province_info g on left(t.origin,2)=left(g.place,2)
+        WHERE t.educate_gradation=#{educateGradation} AND t.enroll_year=#{year}
+        AND t.education_type!=#{educationType} AND t.enroll_subject_type=#{enrollSubjectType}
+        AND t.student_score != 0
+        GROUP BY t.origin order by if(g.place_no is null,100,g.place_no+0)
+    </select>
+
+    <!--招生趋势-->
+    <select id="undergraduateEnrollTrend" resultType="map">
+        <!--SELECT
+            annual, &#45;&#45; 年度
+            province, &#45;&#45; 省份
+            number, &#45;&#45; 招生人数
+            min_rank AS minRank &#45;&#45; 最低位次
+        FROM xs_undergraduate_enroll_trend
+        WHERE province = #{province}
+        ORDER BY annual
+        LIMIT 6-->
+        select a.annual,a.province,ifnull(b.num,0) as number,a.min_rank as minRank
+        from xs_undergraduate_enroll_trend a
+        left join (select enroll_year,count(1) as num
+        from xs_student_enroll where educate_gradation='本科' and origin=#{province} and enroll_subject_type=#{enrollSubjectType}
+        group by enroll_year) b on b.enroll_year=a.annual
+        where a.province=#{province}  and a.enroll_subject_type=#{enrollSubjectType} order by a.annual limit 6;
+    </select>
+
+    <resultMap id="masterEnrollQualityMap" type="map">
+        <result column="major_code" jdbcType="VARCHAR" property="majorCode" />
+        <result column="major_name" jdbcType="VARCHAR" property="majorName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="min" jdbcType="VARCHAR" property="min" />
+            <result column="max" jdbcType="VARCHAR" property="max" />
+            <result column="sort" jdbcType="VARCHAR" property="sort" />
+        </collection>
+    </resultMap>
+    <!-- 硕士生招生质量 -->
+    <select id="masterEnrollQuality"  resultMap="masterEnrollQualityMap">
+        SELECT
+			t.major_code, -- 专业编号
+            t.major_name, -- 专业名称
+			'enrollScore' AS type, -- 分数类型
+            CAST(MIN(enroll_score) AS DECIMAL) AS min, -- 最小值
+            CAST(MAX(enroll_score) AS DECIMAL) AS max, -- 最大值
+            GROUP_CONCAT(enroll_score) AS sort  -- 该学科报考分数
+        FROM xs_student_enroll_score t
+        WHERE t.enroll_year=#{year}
+        GROUP BY major_code,major_name
+		UNION ALL
+        SELECT
+			t.major_code, -- 专业编号
+            t.major_name, -- 专业名称
+			'admitScore' AS type, -- 分数类型
+            CAST(MIN(enroll_score) AS DECIMAL) AS min, -- 最小值
+            CAST(MAX(enroll_score) AS DECIMAL) AS max, -- 最大值
+            GROUP_CONCAT(enroll_score) AS sort  -- 该学科录取分数
+        FROM xs_student_enroll_score t
+        WHERE t.enroll_year=#{year} AND t.is_enroll=1
+        GROUP BY major_code,major_name
+    </select>
+</mapper>

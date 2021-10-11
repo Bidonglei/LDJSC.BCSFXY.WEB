@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.diagnosisTeaching.SunmnetCollegeTeacherInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetCollegeTeacherInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="teacher_no" property="teacherNo" jdbcType="VARCHAR" />
+        <result column="teacher_name" property="teacherName" jdbcType="VARCHAR" />
+        <result column="sex" property="sex" jdbcType="VARCHAR" />
+        <result column="id_card_no" property="idCardNo" jdbcType="VARCHAR" />
+        <result column="birthdate" property="birthdate" jdbcType="VARCHAR" />
+        <result column="politics_status" property="politicsStatus" jdbcType="VARCHAR" />
+        <result column="nation" property="nation" jdbcType="VARCHAR" />
+        <result column="native_place" property="nativePlace" jdbcType="VARCHAR" />
+        <result column="origin_place" property="originPlace" jdbcType="VARCHAR" />
+        <result column="education" property="education" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.EducationEnums" />
+        <result column="degree" property="degree" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.EducationEnums" />
+        <result column="first_dept_name" property="firstDeptName" jdbcType="VARCHAR" />
+        <result column="first_dept_code" property="firstDeptCode" jdbcType="VARCHAR" />
+        <result column="second_dept_name" property="secondDeptName" jdbcType="VARCHAR" />
+        <result column="second_dept_code" property="secondDeptCode" jdbcType="VARCHAR" />
+        <result column="professional_title" property="professionalTitle" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.ProfessionalTitleEnum" />
+        <result column="graduate_school" property="graduateSchool" jdbcType="VARCHAR" />
+        <result column="graduate_major" property="graduateMajor" jdbcType="VARCHAR" />
+        <result column="graduate_date" property="graduateDate" jdbcType="VARCHAR" />
+        <result column="hiredate" property="hiredate" jdbcType="VARCHAR" />
+        <result column="phone" property="phone" jdbcType="VARCHAR" />
+        <result column="is_double_professionally" property="isDoubleProfessionally" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsDoubleProfessionallyEnum" />
+        <result column="is_core_teacher" property="isCoreTeacher" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsCoreTeacherEnum" />
+        <result column="is_major_leader" property="isMajorLeader" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsMajorLeaderEnum" />
+        <result column="is_college_certificate" property="isCollegeCertificate" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsCollegeCertificateEnum" />
+        <result column="is_job_certificate" property="isJobCertificate" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsJobCertificateEnum" />
+        <result column="manager_type" property="managerType" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.ManagerTypeEnums" />
+        <result column="is_quit" property="isQuit" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsQuitEnum" />
+        <result column="picture_url" property="pictureUrl" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <select id="queryCollegeTeacherInfo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select
+          id,
+          code as teacher_no,
+          name as teacher_name,
+          if(sex = 1, '男', if(sex = 2, '女', '其他')) as sex,
+          identity_card as id_card_no,
+          birthdate,
+          politics_status,
+          ethnic as nation,
+          native_place,
+          native_place as origin_place,
+          case education when '大学本科毕业' then 'BK' when '硕士研究生' or '硕士研究生毕业' then 'SS'
+            when '博士研究生' or '博士研究生毕业' then 'BS' else 'DZJYX' end as education,
+          case degree when '学士' then 'BK' when '硕士' then 'SS' when '博士' then 'BS' else 'DZJYX' end as degree,
+          first_dept_name,
+          first_dept_code,
+          second_dept_name,
+          second_dept_code,
+          case professional_title when '教授' then 'JS' when '副教授' then 'FJS'
+            when '高级工程师' then 'GJGCS' when '讲师' then 'JIANGSHI' when '工程师' then 'GCS'
+            when '助教' then 'ZJ' when '助理工程师' then 'ZLGCS' when '技师' then 'JISHI' else 'QT' end as professional_title,
+          graduate_school,
+          graduate_major,
+          graduate_date,
+          hire_date as hiredate,
+          phone,
+          if(is_double_professionally = 1, 'YES', 'NO') as is_double_professionally,
+          if(is_core_teacher = 1, 'YES', 'NO') as is_core_teacher,
+          if(is_major_leader = 1, 'YES', 'NO') as is_major_leader,
+          if(is_college_certificate = 1, 'YES', 'NO') as is_college_certificate,
+          if(is_job_certificate = 1, 'YES', 'NO') as is_job_certificate,
+          'OTHERMANAGERS' as manager_type,
+          if(is_quit = 1, 'YES', 'NO') as is_quit,
+          '' as picture_url,
+          '' as create_time,
+          '' as last_modify_time
+        from basic_teacher_info
+        where code = #{teacherNo,jdbcType=VARCHAR} order by semester_year desc limit 1
+    </select>
+
+    <select id="queryRemoteTeacherList" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryRemoteTeacherListRequest" >
+      select
+      id,
+      code as teacher_no,
+      name as teacher_name,
+      if(sex = 1, '男', if(sex = 2, '女', '其他')) as sex,
+      identity_card as id_card_no,
+      birthdate,
+      politics_status,
+      ethnic as nation,
+      native_place,
+      native_place as origin_place,
+      case education when '大学本科毕业' then 'BK' when '硕士研究生' or '硕士研究生毕业' then 'SS'
+      when '博士研究生' or '博士研究生毕业' then 'BS' else 'DZJYX' end as education,
+      case degree when '学士' then 'BK' when '硕士' then 'SS' when '博士' then 'BS' else 'DZJYX' end as degree,
+      first_dept_name,
+      first_dept_code,
+      second_dept_name,
+      second_dept_code,
+      case professional_title when '教授' then 'JS' when '副教授' then 'FJS'
+      when '高级工程师' then 'GJGCS' when '讲师' then 'JIANGSHI' when '工程师' then 'GCS'
+      when '助教' then 'ZJ' when '助理工程师' then 'ZLGCS' when '技师' then 'JISHI' else 'QT' end as professional_title,
+      graduate_school,
+      graduate_major,
+      graduate_date,
+      hire_date as hiredate,
+      phone,
+      if(is_double_professionally = 1, 'YES', 'NO') as is_double_professionally,
+      if(is_core_teacher = 1, 'YES', 'NO') as is_core_teacher,
+      if(is_major_leader = 1, 'YES', 'NO') as is_major_leader,
+      if(is_college_certificate = 1, 'YES', 'NO') as is_college_certificate,
+      if(is_job_certificate = 1, 'YES', 'NO') as is_job_certificate,
+      'OTHERMANAGERS' as manager_type,
+      if(is_quit = 1, 'YES', 'NO') as is_quit,
+      '' as picture_url,
+      '' as create_time,
+      '' as last_modify_time
+      from
+      basic_teacher_info ti
+      where
+      ti.semester_year = (select semester_year from basic_semester_info where sort = 1)
+      and  ti.is_quit = 'NO'
+      <if test="teacher !=null and teacher !=''">
+        and (`code` LIKE CONCAT('%',#{teacher,jdbcType=VARCHAR},'%' )
+        or `name` LIKE CONCAT('%',#{teacher,jdbcType=VARCHAR},'%' )
+        )
+      </if>
+      <if test="firstDeptCode !=null and firstDeptCode !=''">
+        and ti.first_dept_code =#{firstDeptCode,jdbcType=VARCHAR}
+      </if>
+      <if test="secondDeptCode !=null and secondDeptCode !=''">
+        and ti.second_dept_code =#{secondDeptCode,jdbcType=VARCHAR}
+      </if>
+      <if test="professionalTitle !=null">
+        and professional_title =#{professionalTitle,javaType=com.sunmnet.indexManage.base.indexManage.enums.ProfessionalTitleEnum}
+      </if>
+      <if test="education !=null">
+        and education = #{education,javaType=com.sunmnet.indexManage.base.indexManage.enums.EducationEnums}
+      </if>
+    </select>
+</mapper>

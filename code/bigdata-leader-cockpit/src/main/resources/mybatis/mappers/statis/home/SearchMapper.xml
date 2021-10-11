@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.home.SearchMapper">
+    <!-- 搜索框信息-学院 -->
+    <select id="listSearchBoxAcademy" resultType="CommonRES">
+        SELECT academy AS name,academy AS value FROM c_code_info 
+        WHERE academy IS NOT NULL
+        GROUP BY academy
+    </select>
+    <!-- 搜索框信息-学年 -->
+    <select id="listSearchBoxYear" resultType="CommonRES">
+        SELECT year AS name,year AS value FROM c_code_info 
+        WHERE year IS NOT NULL
+        GROUP BY year ORDER BY year DESC
+    </select>
+    <!-- 搜索框信息-专业 -->
+    <select id="listSearchBoxMajor" parameterType="SearchREQ" resultType="CommonRES">
+        SELECT major AS name,major AS value FROM c_code_info 
+		WHERE academy=#{academy} AND major IS NOT NULL
+		GROUP BY major
+    </select>
+    <!-- 搜索框信息-班级 -->
+    <select id="listSearchBoxClass" parameterType="SearchREQ" resultType="CommonRES">
+        SELECT class AS name,class AS value FROM c_code_info 
+        WHERE major=#{major} AND class IS NOT NULL
+        <if test="year != null and year != ''">
+            AND year=#{year}
+        </if>
+        GROUP BY class ORDER BY class DESC
+    </select>
+
+
+
+
+
+
+
+
+</mapper>

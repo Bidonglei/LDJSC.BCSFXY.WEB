@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetSystemInfoDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemInfoEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="system_no" property="systemNo" jdbcType="VARCHAR" />
+        <result column="system_name" property="systemName" jdbcType="VARCHAR" />
+        <result column="system_status" property="systemStatus" jdbcType="VARCHAR" />
+        <result column="is_warn" property="isWarn" javaType="com.sunmnet.bigdata.systemManage.base.systemManage.enums.IsWarnEnum" />
+        <result column="system_describe" property="systemDescribe" jdbcType="VARCHAR" />
+        <result column="system_url" property="systemUrl" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, system_no, system_name, system_status,is_warn, system_describe,system_url, create_time, last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_info
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+	<!--根据系统编号查询系统信息 2018-03-21 wm-->
+     <select id="getSystemInfoBySystemNo" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_info
+        where system_no = #{systemNo,jdbcType=VARCHAR}
+    </select>
+   <!--查询所有系统信息  2018-04-08 wm-->
+     <select id="findSystemInfoAll" resultMap="BaseResultMap" parameterType="java.lang.String" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_info
+        where system_no != #{systemNo,jdbcType=VARCHAR}
+    </select>
+    <!--查询系统信息 2018-03-21 wm-->
+    <select id="findSystemInfo" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QuerySystemInfoPageRequest" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_info ssi
+        <if test="sort !=null  and  sort!=''">
+			order by ssi.${sort} ${order}
+		</if>
+    </select>
+   
+   
+   <resultMap id="BaseResultMapDropdown" type="com.sunmnet.bigdata.systemManage.base.systemManage.model.QuerySystemDropdownModel" >
+        <result column="system_no" property="systemNo" jdbcType="VARCHAR" />
+        <result column="system_name" property="systemName" jdbcType="VARCHAR" />
+    </resultMap>
+   
+    <!--查询系统信息下拉框选择 2018-03-23 wm-->
+    <select id="findSystemInfoDropdown" resultMap="BaseResultMapDropdown" parameterType="java.lang.String" >
+        select system_no, system_name
+        	from sunmnet_system_info where system_status='NORMAL'
+    </select>
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemInfoEntity" >
+        insert into sunmnet_system_info
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="systemNo != null" >
+                system_no,
+            </if>
+            <if test="systemName != null" >
+                system_name,
+            </if>
+            <if test="systemStatus != null" >
+                system_status,
+            </if>
+            <if test="isWarn != null" >
+                is_warn,
+            </if>
+            <if test="systemDescribe != null" >
+                system_describe,
+            </if>
+            <if test="systemUrl != null" >
+                system_url,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="systemNo != null" >
+                #{systemNo,jdbcType=VARCHAR},
+            </if>
+            <if test="systemName != null" >
+                #{systemName,jdbcType=VARCHAR},
+            </if>
+            <if test="systemStatus != null" >
+                #{systemStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="isWarn != null" >
+                #{isWarn,jdbcType=IsWarnEnum},
+            </if>
+            <if test="systemDescribe != null" >
+                #{systemDescribe,jdbcType=VARCHAR},
+            </if>
+            <if test="systemUrl != null" >
+                #{systemUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemInfoEntity" >
+        update sunmnet_system_info
+        <set >
+            <if test="systemNo != null" >
+                system_no = #{systemNo,jdbcType=VARCHAR},
+            </if>
+            <if test="systemName != null" >
+                system_name = #{systemName,jdbcType=VARCHAR},
+            </if>
+            <if test="systemStatus != null" >
+                system_status = #{systemStatus,jdbcType=VARCHAR},
+            </if>
+             <if test="isWarn != null" >
+                is_warn = #{isWarn,jdbcType=IsWarnEnum},
+            </if>
+            <if test="systemDescribe != null" >
+                system_describe = #{systemDescribe,jdbcType=VARCHAR},
+            </if>
+            <if test="systemUrl != null" >
+                system_url = #{systemUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_system_info
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+	<!--根据系统编号删除系统信息 wm 2018-03-30-->
+	<delete id="deleteSystemInfoBySystemNo" parameterType="java.lang.String" >
+        delete from sunmnet_system_info
+        where system_no = #{systemNo,jdbcType=VARCHAR}
+    </delete>
+</mapper>

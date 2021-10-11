@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.home.OpinionMapper">
+    <insert id="saveOpinionInfo">
+        INSERT INTO sunmnet_manage.sunmnet_opinion_info (name,account,one_menu_code,one_menu, two_menu_code,two_menu, three_menu_code,three_menu,opinion_location, opinion_type, opinion_content,status,importance,create_time, create_person)
+            VALUES (#{name},#{account},#{oneMenuCode,jdbcType=VARCHAR},#{oneMenu,jdbcType=VARCHAR}, #{twoMenuCode,jdbcType=VARCHAR}, #{twoMenu,jdbcType=VARCHAR}, #{threeMenuCode,jdbcType=VARCHAR}, #{threeMenu,jdbcType=VARCHAR},#{opinionLocation},#{opinionType},#{opinionContent},#{status},#{importance},#{createTime},#{createPerson});
+    </insert>
+    <select id="listOpinionInfo" resultType="java.util.Map">
+        SELECT
+            id AS id,
+            name AS name, -- 用户
+            account AS account, -- 账号
+            create_time AS createTime, -- 反馈时间
+            opinion_type AS opinionType, -- 意见类型
+            opinion_location AS opinionLocation, -- 位置
+            opinion_content AS opinionContent, -- 意见描述描述
+            s.dict_no AS statusCode, -- 状态编码
+            s.dict_name AS status, -- 状态
+            i.dict_no AS importanceCode, -- 重要程度编码
+            i.dict_name AS importance -- 重要程度
+        FROM
+          sunmnet_manage.sunmnet_opinion_info o
+        LEFT JOIN (SELECT dict_no,dict_name,dict_sort FROM sunmnet_manage.sunmnet_select_dict_info WHERE dict_type='SYS_FKYJ_STATE') s ON o.status=s.dict_no
+        LEFT JOIN (SELECT dict_no,dict_name,dict_sort FROM sunmnet_manage.sunmnet_select_dict_info WHERE dict_type='SYS_FKYJ_IMPORTANCE') i ON o.importance=i.dict_no
+        <where>
+            <if test="startTime != null and startTime != ''">
+                and create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and create_time &lt;= #{endTime}
+            </if>
+            <if test="oneMenu != null and oneMenu != ''">
+                and one_menu_code = #{oneMenu}
+            </if>
+            <if test="twoMenu != null and twoMenu != ''">
+                and two_menu_code = #{twoMenu}
+            </if>
+            <if test="opinionType != null and opinionType != ''">
+                and opinion_type = #{opinionType}
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+            <if test="importance != null and importance != ''">
+                and importance = #{importance}
+            </if>
+            <if test="nameOrAccount != null and nameOrAccount != ''">
+                and (name like concat('%',#{nameOrAccount},'%') or account like concat('%',#{nameOrAccount},'%') )
+            </if>
+        </where>
+        ORDER BY s.dict_sort ASC,i.dict_sort ASC,create_time DESC
+    </select>
+
+    <!--修改标志-->
+    <update id="updateOpinionInfoById" >
+        update sunmnet_manage.sunmnet_opinion_info
+        <set >
+            <if test="status != null and status != ''" >
+                status = #{status,jdbcType=VARCHAR},
+            </if>
+            <if test="importance != null and importance != ''" >
+                importance = #{importance,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

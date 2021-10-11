@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.teaching.TeacherInfoMapper">
+  <resultMap id="BaseResultMap" type="TeacherInfo">
+    <result column="teacher_no" jdbcType="VARCHAR" property="teacherNo" />
+    <result column="teacher_type" jdbcType="VARCHAR" property="teacherType" />
+    <result column="academy_code" jdbcType="VARCHAR" property="academyCode" />
+    <result column="academy_name" jdbcType="VARCHAR" property="academyName" />
+    <result column="job_title" jdbcType="VARCHAR" property="jobTitle" />
+    <result column="age" jdbcType="VARCHAR" property="age" />
+    <result column="appointment_type" jdbcType="VARCHAR" property="appointmentType" />
+    <result column="education" jdbcType="VARCHAR" property="education" />
+    <result column="entry_date" jdbcType="VARCHAR" property="entryDate" />
+    <result column="leave_date" jdbcType="VARCHAR" property="leaveDate" />
+    <result column="academy_margin" jdbcType="VARCHAR" property="academyMargin" />
+    <result column="is_experimenter" jdbcType="VARCHAR" property="isExperimenter" />
+    <result column="is_professional_leader" jdbcType="VARCHAR" property="isProfessionalLeader" />
+    <result column="is_manager" jdbcType="VARCHAR" property="isManager" />
+    <result column="manager_type" jdbcType="VARCHAR" property="managerType" />
+  </resultMap>
+  <sql id="reqCondition">
+        FROM c_teacher_info
+        <where>
+            <if test="schoolYear !=null and schoolYear != ''">
+                YEAR(entry_date) &lt;= RIGHT(#{schoolYear},4)
+                AND (leave_date is NULL OR leave_date='' OR YEAR(leave_date) &gt;= LEFT(#{schoolYear},4))
+                AND job_title != '' AND job_title is not null
+            </if>
+            <if test="appointmentType != null and appointmentType != ''">
+                AND appointment_type=#{appointmentType}
+            </if>
+            <if test="education != null and education != ''">
+                AND education=#{education}
+            </if>
+        </where>
+   </sql>
+   <!-- 教师分布桑基图列名 -->
+  <select id="listJobTitleOrderDesc" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT * FROM (
+        SELECT job_title AS name
+        <include refid="reqCondition" ></include>
+        GROUP BY job_title ORDER BY COUNT(*) DESC
+        ) a
+        UNION 
+        SELECT DISTINCT academy_name AS name
+        <include refid="reqCondition" ></include>
+        AND academy_name!='' AND academy_name is not null
+  </select>
+  <!-- 聘任类型统计 -->
+  <select id="listAppointmentType" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT appointment_type AS type,COUNT(*) AS num
+        <include refid="reqCondition"></include>
+        GROUP BY appointment_type
+  </select>
+  <!-- 各学院专任教师分布情况 -->
+  <select id="getDistributionByAcademy" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT job_title source,academy_name target,COUNT(*) value FROM (
+            SELECT job_title,academy_name
+        <include refid="reqCondition" ></include>
+        )t GROUP BY job_title,academy_name
+  </select>
+  <!-- 教师队伍结构分析-学历结构 -->
+  <select id="getEducationStructure" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT education AS name,COUNT(*) AS value
+        <include refid="reqCondition"></include>
+        AND education is not null AND education != ''
+        group by education
+        order by value desc
+  </select>
+  <!-- 教师队伍结构分析-学缘结构 -->
+  <select id="getAcademyMarginStructure" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT academy_margin AS name,COUNT(*) AS value
+        <include refid="reqCondition"></include>
+        AND academy_margin is not null AND academy_margin != ''
+        group by academy_margin
+        order by value desc
+  </select>
+  <!-- 教师队伍结构分析-年龄结构 -->
+  <select id="getAgeStructrue" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT COUNT(CASE WHEN age &lt;= 35 THEN 1 END) AS '1',
+               COUNT(CASE WHEN age between 36 AND 45 THEN 1 END) AS '2',
+               COUNT(CASE WHEN age between 46 AND 55 THEN 1 END) AS '3',
+               COUNT(CASE WHEN age &gt;= 56 THEN 1 END) AS '4'
+        <include refid="reqCondition"></include>
+        AND age is not null AND age != ''
+  </select>
+  <!--教师队伍-职称分布  -->
+  <select id="getJopTitleDistribution" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT job_title AS name,COUNT(*) AS value
+        <include refid="reqCondition"></include>
+        GROUP BY job_title
+  </select>
+  <!-- 教师队伍-生师比 -->
+  <select id="getStudentTeacherRatio" parameterType="TeachingTeamREQ" resultType="Map">
+        SELECT academy_name,proportion FROM t_ratio_student_teacher
+        WHERE school_year=#{schoolYear} AND education=#{education}
+        ORDER BY proportion ASC
+  </select>
+
+
+    <select id="listTeacherType" resultType="java.util.Map">
+        SELECT a.teacher_type name FROM c_teacher_info a
+        <where>
+            <if test="departmentType!=null">
+                a.department_type=#{departmentType}
+            </if>
+        </where>
+        GROUP BY a.teacher_type HAVING name is not null and name &lt;&gt; ''
+        UNION ALL
+        SELECT a.academy_name name FROM c_teacher_info a
+        <where>
+            <if test="departmentType!=null">
+                a.department_type=#{departmentType}
+            </if>
+        </where>
+        GROUP BY a.academy_name HAVING academy_name is not null and academy_name &lt;&gt; ''
+    </select>
+    <select id="listTeacherTypeSchool" resultType="java.util.Map">
+      SELECT a.teacher_type source,a.academy_name target,COUNT(1) value FROM c_teacher_info a
+        <where>
+            <if test="departmentType!=null">
+                a.department_type=#{departmentType}
+            </if>
+        </where>
+        GROUP BY a.teacher_type,a.academy_name
+        HAVING academy_name is not null and academy_name &lt;&gt; '' and teacher_type is not null and teacher_type &lt;&gt; ''
+    </select>
+    <select id="listTeacherJob" resultType="java.util.Map">
+        SELECT a.job_title name,COUNT(1) value FROM c_teacher_info a
+        <where>
+            <if test="departmentType!=null">
+                a.department_type=#{departmentType}
+            </if>
+        </where>
+        GROUP BY a.job_title HAVING name is not null and name &lt;&gt; '';
+      </select>
+    <select id="listTeacherAge" resultType="java.util.Map">
+        SELECT
+        COUNT(CASE WHEN age &lt;= 35 THEN 1 END) AS '1',
+               COUNT(CASE WHEN age between 36 AND 45 THEN 1 END) AS '2',
+               COUNT(CASE WHEN age between 46 AND 55 THEN 1 END) AS '3',
+               COUNT(CASE WHEN age &gt;= 56 THEN 1 END) AS '4' FROM c_teacher_info
+               where age!='' AND age is not null
+                <if test="departmentType!=null">
+                    AND department_type=#{departmentType}
+                </if>
+      </select>
+    <select id="selectTeacherTotal" resultType="java.util.Map">
+        SELECT convert((benqi-shangqi)/shangqi,decimal(10,2)) rate,total FROM (
+        SELECT
+        (SELECT COUNT(1) FROM c_teacher_info a) as total,
+        (SELECT COUNT(1) shangqi FROM c_teacher_info a WHERE LEFT(a.entry_date,4)=#{year}-1) as shangqi,
+        (SELECT COUNT(1) benqi FROM c_teacher_info a WHERE LEFT(a.entry_date,4)=#{year}) as benqi
+        FROM DUAL) a
+    </select>
+    <select id="selectTeacherDepartmentTypeNum" resultType="java.util.Map">
+        SELECT a.department_type departmentType,COUNT(1) number FROM c_teacher_info a GROUP BY a.department_type HAVING departmentType &lt;&gt; '' AND departmentType is not NULL
+    </select>
+
+
+</mapper>

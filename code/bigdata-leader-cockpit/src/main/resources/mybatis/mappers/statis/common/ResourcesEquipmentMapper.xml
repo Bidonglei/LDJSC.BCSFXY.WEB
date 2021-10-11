@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.common.ResourcesEquipmentMapper">
+  <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.web.model.entity.common.ResourcesEquipment">
+    <result column="count_year" jdbcType="VARCHAR" property="countYear" />
+    <result column="lab_type" jdbcType="VARCHAR" property="labType" />
+    <result column="lab_number" jdbcType="VARCHAR" property="labNumber" />
+    <result column="lab_acreage" jdbcType="VARCHAR" property="labAcreage" />
+    <result column="course_number" jdbcType="VARCHAR" property="courseNumber" />
+    <result column="equipment_number" jdbcType="VARCHAR" property="equipmentNumber" />
+  </resultMap>
+  <select id="listAll" resultMap="BaseResultMap">
+    select count_year, lab_type, lab_number, lab_acreage, course_number, equipment_number
+    from c_resources_equipment
+  </select>
+    <select id="listEquipmentByYear" resultMap="BaseResultMap">
+      select count_year, lab_type, lab_number, lab_acreage, course_number, equipment_number
+        from c_resources_equipment
+        WHERE count_year = left(#{year},4)
+    </select>
+  <select id="listEquipmentByYears" resultMap="BaseResultMap">
+    select lab_type, SUM(lab_number) lab_number, SUM(lab_acreage) lab_acreage, SUM(course_number) course_number, SUM(equipment_number) equipment_number
+        from c_resources_equipment
+        WHERE count_year in
+        <foreach collection="years" item="year" open="(" separator="," close=")">
+          #{year}
+        </foreach>
+       GROUP BY lab_type
+  </select>
+</mapper>

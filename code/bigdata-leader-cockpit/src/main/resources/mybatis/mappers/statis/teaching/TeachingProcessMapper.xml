@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.teaching.TeachingProcessMapper">
+
+    <!--教授授课率:教授授课情况-->
+    <select id="listProfessorTeachingSituation" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_name as name,
+        sum(if(academic_title='教授' and is_teaching='1',1,0)) as teachingProfessor,
+        sum(if(academic_title='教授' and is_teaching='0',1,0)) as notTeachingProfessor,
+        sum(if(academic_title='教授' and is_enough_hours='1',1,0)) as hour32Professor,
+        round(sum(if(academic_title='教授' and is_teaching='1',1,0))/sum(if(academic_title='教授',1,0))*100,2) as professorClassRate,
+        round(sum(if(academic_title='教授' and is_enough_hours='1',1,0))/sum(if(academic_title='教授' and is_teaching='1',1,0))*100,2) as hour32ProfessorClassRate
+        from jx_professor_teaching_situation
+        where annual=#{annual}
+        group by academy_name order by teachingProfessor DESC
+    </select>
+
+    <!--教授授课率:副教授授课情况-->
+    <select id="listAssociateTeachingSituation" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_name as name,
+        sum(if(academic_title='副教授' and is_teaching='1',1,0)) as teachingAssociate,
+        sum(if(academic_title='副教授' and is_teaching='0',1,0)) as notTeachingAssociate,
+        sum(if(academic_title='副教授' and is_enough_hours='1',1,0)) as hour32Associate,
+        round(sum(if(academic_title='副教授' and is_teaching='1',1,0))/sum(if(academic_title='副教授',1,0))*100,2) as associateClassRate,
+        round(sum(if(academic_title='副教授' and is_enough_hours='1',1,0))/sum(if(academic_title='副教授' and is_teaching='1',1,0))*100,2) as hour32AssociateClassRate
+        from jx_professor_teaching_situation
+        where annual=#{annual}
+        group by academy_name order by teachingAssociate DESC
+    </select>
+
+    <!--教授授课率:教授授课学时情况-->
+    <select id="listProfessorTeachingHours" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_name as name,
+        round(sum(if(academic_title='教授',teaching_hours,0))/sum(if(academic_title='教授',1,0)),2) as professorTeachingHours,
+        round(sum(if(academic_title='副教授',teaching_hours,0))/sum(if(academic_title='副教授',1,0)),2) as associateTeachingHours
+        from jx_professor_teaching_situation
+        where annual=#{annual}
+        group by academy_name order by professorTeachingHours desc
+    </select>
+
+    <!--学业进度:本科生学业进度情况-->
+    <select id="listUndergraduatesProgressCredit" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select grade_name as name,credit_sum as credit,count(1) as value
+        from xs_student_info
+        where educate_gradation='本科'
+        <if test="academy != null and academy != ''">
+            and academy_code=#{academy}
+        </if>
+        group by grade_name,credit_sum order by grade desc
+    </select>
+
+    <!--学业进度:本科生学业进度情况-扇形图-->
+    <select id="listUndergraduatesProgress" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select grade_name as name,count(1) as value
+        from xs_student_info
+        where educate_gradation='本科'
+        <if test="academy != null and academy != ''">
+            and academy_code=#{academy}
+        </if>
+        group by grade_name order by grade desc
+    </select>
+
+    <!--学业进度:硕士生学业进度情况-->
+    <select id="listMasterProgressCredit" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select grade_name as name,credit_sum as credit,count(1) as value
+        from xs_student_info
+        where educate_gradation='硕士' and grade_name is not null
+        <if test="academy != null and academy != ''">
+            and academy_code=#{academy}
+        </if>
+        group by grade_name,credit_sum order by grade desc
+    </select>
+
+    <!--学业进度:硕士生学业进度情况-扇形图-->
+    <select id="listMasterProgress" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select grade_name as name,count(1) as value
+        from xs_student_info
+        where educate_gradation='硕士' and grade_name is not null
+        <if test="academy != null and academy != ''">
+            and academy_code=#{academy}
+        </if>
+        group by grade_name order by grade desc
+    </select>
+
+    <!--学习年限:超过学习年限人数-->
+    <select id="getSchoolingYearsTotal" resultType="int">
+        select COUNT(*) as total
+        from xs_student_info
+        where schooling_years>=#{year} and educate_gradation=#{educateGradation}
+    </select>
+
+    <!--学习年限:本科生学习年限情况-->
+    <select id="getUndergraduateSchoolingYears" resultType="java.util.Map">
+        select (case schooling_years when 1 then '小于等于4年'
+        when 2 then '大于4年小于5年' when 3 then '大于5年小于6年' end) as name,
+        count(1) as value
+        from
+        (select <![CDATA[ (case when schooling_years<4 then 1
+        when schooling_years>=4 and schooling_years<5 then 2
+        when schooling_years>=5 and schooling_years<=6 then 3 end)]]> as schooling_years
+        from xs_student_info
+        where educate_gradation='本科') a
+        group by schooling_years
+    </select>
+
+    <!--学习年限:硕士生学习年限情况-->
+    <select id="getMasterSchoolingYears" resultType="java.util.Map">
+        select (case schooling_years when 1 then '小于等于3年'
+        when 2 then '大于3年小于4年' when 3 then '大于4年小于5年'
+        when 4 then '大于5年' end) as name,
+        count(1) as value
+        from
+        (select <![CDATA[ (case when schooling_years<3 then 1
+        when schooling_years>=3 and schooling_years<4 then 2
+        when schooling_years>=4 and schooling_years<5 then 3
+        when schooling_years>=5 then 4 end)]]> as schooling_years
+        from xs_student_info
+        where educate_gradation='硕士') a
+        group by schooling_years
+    </select>
+
+    <!--学习年限:博士生学习年限情况-->
+    <select id="getDoctorSchoolingYears" resultType="java.util.Map">
+        select (case schooling_years when 1 then '小于等于4年'
+        when 2 then '大于4年小于5年' when 3 then '大于5年小于6年'
+        when 4 then '大于6年小于7年' when 5 then '大于7年' end) as name,
+        count(1) as value
+        from
+        (select <![CDATA[ (case when schooling_years<4 then 1
+        when schooling_years>=4 and schooling_years<5 then 2
+        when schooling_years>=5 and schooling_years<6 then 3
+        when schooling_years>=6 and schooling_years<7 then 4
+        when schooling_years>=7 then 5 end)]]> as schooling_years
+        from xs_student_info
+        where educate_gradation='博士') a
+        group by schooling_years
+    </select>
+
+    <!--学习年限:本科生学习年限超过4年人数-->
+    <select id="listUndergraduateThanFourYears" resultType="java.util.Map">
+        select academy_code,academy_short as name,
+        sum(if(schooling_years=2,1,0)) as thanFour,
+        sum(if(schooling_years=3,1,0)) as thanFive
+        from
+        (select academy_code,academy_short,
+        <![CDATA[ (case when schooling_years<4 then 1
+        when schooling_years>=4 and schooling_years<5 then 2
+        when schooling_years>=5 and schooling_years<=6 then 3 end)]]> as schooling_years
+        from xs_student_info
+        where educate_gradation='本科') a
+        group by academy_code,academy_short
+    </select>
+
+    <!--学习年限:硕士生学习年限延期/超期情况-->
+    <select id="listMasterMoreThanYears" resultType="java.util.Map">
+        select academy_code,academy_short as name,
+        sum(if(schooling_years=2,1,0)) as thanThree,
+        sum(if(schooling_years=3,1,0)) as thanFour,
+        sum(if(schooling_years=4,1,0)) as thanFive
+        from
+        (select academy_code,academy_short,
+        <![CDATA[ (case when schooling_years<3 then 1
+        when schooling_years>=3 and schooling_years<4 then 2
+        when schooling_years>=4 and schooling_years<5 then 3
+        when schooling_years>=5 then 4 end)]]> as schooling_years
+        from xs_student_info
+        where educate_gradation='硕士') a
+        group by academy_code,academy_short
+    </select>
+
+    <!--学习年限:博士生学习年限延期/超期情况-->
+    <select id="listDoctorMoreThanYears" resultType="java.util.Map">
+        select academy_code,academy_short as name,
+        sum(if(schooling_years=2,1,0)) as thanFour,
+        sum(if(schooling_years=3,1,0)) as thanFive,
+        sum(if(schooling_years=4,1,0)) as thanSix,
+        sum(if(schooling_years=5,1,0)) as thanSeven
+        from
+        (select academy_code,academy_short,
+        <![CDATA[ (case when schooling_years<4 then 1
+        when schooling_years>=4 and schooling_years<5 then 2
+        when schooling_years>=5 and schooling_years<6 then 3
+        when schooling_years>=6 and schooling_years<7 then 4
+        when schooling_years>=7 then 5 end)]]> as schooling_years
+        from xs_student_info
+        where educate_gradation='博士') a
+        group by academy_code,academy_short
+    </select>
+
+    <!--博士延期/超期详细信息-->
+    <select id="listDoctorMoreThanYearsDetail" parameterType="DoctorMoreThanYearsREQ" resultType="DoctorMoreThanYearsRES">
+        select student_no as studentNo,
+        student_name as studentName,
+        academy_short as academyShort,
+        date_format(enroll_date,'%Y-%m-%d') as enrollDate,
+        schooling_years as schoolingYears,
+        teacher_no as teacherNo,
+        teacher_name as teacherName,
+        ifnull(anomaly_type,'正常') as anomalyType
+        from xs_student_info
+        where educate_gradation='博士' AND schooling_years>4
+        <if test="studentName!=null and studentName!=''">
+            AND (student_no like concat('%',#{studentName},'%') or student_name like concat('%',#{studentName},'%'))
+        </if>
+        <if test="teacherName!=null and teacherName!=''">
+            AND (teacher_no like concat('%',#{teacherName},'%') or teacher_name like concat('%',#{teacherName},'%'))
+        </if>
+        <if test="academyCode!=null and academyCode!=''">
+            AND academy_code=#{academyCode}
+        </if>
+        order by student_no desc
+    </select>
+
+    <!--学习年限:本科生各年级学生毕业率-->
+    <select id="listUndergraduateRatioByGrade" resultType="java.util.Map">
+        select grade as name,
+        round(sum(if(graduate_years='4',1,0))/count(1)*100,2) as fourRatio,
+        (case sum(if(graduate_years='5',1,0)) when 0 then 0 else
+        round(sum(if(graduate_years in ('4','5'),1,0))/count(1)*100,2) end) as fiveRatio,
+        (case sum(if(graduate_years='6',1,0)) when 0 then 0 else
+        round(sum(if(graduate_years in ('4','5','6'),1,0))/count(1)*100,2) end) as sixRatio
+        from jx_undergraduate_graduation
+        group by grade
+    </select>
+
+    <!--学习年限:各学院毕业情况(annual代替年级)-->
+    <select id="listUndergraduateRatioByAcademy" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_code,academy_name as name,
+        round(sum(if(graduate_years='4',1,0))/count(1)*100,2) as fourRatio,
+        (case sum(if(graduate_years='5',1,0)) when 0 then 0 else
+        round(sum(if(graduate_years in ('4','5'),1,0))/count(1)*100,2) end) as fiveRatio,
+        (case sum(if(graduate_years='6',1,0)) when 0 then 0 else
+        round(sum(if(graduate_years in ('4','5','6'),1,0))/count(1)*100,2) end) as sixRatio
+        from jx_undergraduate_graduation
+        where grade=#{annual}
+        group by academy_code,academy_name
+    </select>
+
+    <!--学习年限:博士毕业占比情况-->
+    <select id="listDoctorRatioByAcademy" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_code,academy_name as name,
+        total_number as totalNumber,
+        graduation_number as graduationNumber,
+        round(graduation_number/total_number*100,2) as ratio
+        from jx_doctor_graduation
+        where graduate_year=#{annual}
+    </select>
+
+    <!--选课情况:课程贡献率-->
+    <select id="listCourseContribution" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_code,academy_short as name,course_contribution as value
+        from jx_course_contribution_openness
+        where left(annual,4)=#{annual}
+    </select>
+
+    <!--选课情况:课程开放度-->
+    <select id="listCourseOpenness" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_short as name,course_openness as value
+        from jx_course_contribution_openness
+        where left(annual,4)=#{annual} and (course_openness is not null or course_openness!='')
+        order by course_openness+0 desc
+    </select>
+
+    <!--本科实践教学:国家级大学生创新创业训练计划项目-->
+    <select id="listInnovativeTrainingProgram" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_short as name,sum(project_number) as value
+        from jx_innovative_training_program
+        where annual=#{annual}
+        <if test="type != null and type != ''">
+            and project_type=#{type}
+        </if>
+        group by academy_short order by value desc
+    </select>
+
+    <!--本科实践教学:大创项目扇形图-->
+    <select id="listInnovativeTrainingProgramSector" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select project_type as name,sum(project_number) as value
+        from jx_innovative_training_program
+        where annual=#{annual}
+        group by project_type
+        order by value desc
+    </select>
+
+    <!--本科实践教学:“高峰体验计划”项目-->
+    <select id="listPeakExperienceProgram" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_short as name,sum(project_number) as value
+        from jx_peak_experience_program
+        where annual=#{annual}
+        group by academy_short order by value desc
+    </select>
+
+    <!--本科毕设:选题来源情况-->
+    <select id="listSelectedTopic" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select topic_type as name,topic_number as value
+        from jx_selected_topic
+        where annual=#{annual}
+        order by topic_number+0
+    </select>
+
+    <!--本科毕设:跨专业选题情况-->
+    <select id="listInterdisciplinaryTopic" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select topic_major_code as topicMajorCode, -- 选题所属专业代码
+        topic_major as topicMajor, -- 跨专业名
+        major_code as majorCode, -- 学生所在学院编号
+        major_name as majorName, -- 学生所在学院名称
+        GROUP_CONCAT(student_name) as studentName, -- 学生姓名
+        count(1) as num -- 数量
+        from jx_interdisciplinary_topic
+        where annual=#{annual}
+        group by topic_major_code,topic_major,major_code,major_name
+    </select>
+
+    <!--研究生论文:论文及答辩质量-->
+    <select id="listThesisDefenseQuality" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_code,academy_short as name,
+        ifnull(round(sum(if(censorship_type='校盲审' and is_censorship='1',1,0))/sum(if(censorship_type='校盲审',1,0))*100,2),0) as schoolBlindPass,
+        ifnull(round(sum(if(censorship_type='院盲审' and is_censorship='1',1,0))/sum(if(censorship_type='院盲审',1,0))*100,2),0) as academyBlindPass,
+        ifnull(round(sum(if(is_censorship='1',1,0))/count(1)*100,2),0) as onePassRatio,
+        ifnull(round(sum(if(censorship_level='1',1,0))/count(1)*100,2),0) as excellentRatio,
+        ifnull(round(sum(if(censorship_type='校盲审' and is_censorship='0',1,0))/sum(if(censorship_type='校盲审',1,0))*100,2),0) as schoolBlindNotPass,
+        ifnull(round(sum(if(censorship_type='院盲审' and is_censorship='0',1,0))/sum(if(censorship_type='院盲审',1,0))*100,2),0) as academyBlindNotPass,
+        ifnull(round(sum(if(is_censorship='0',1,0))/count(1)*100,2),0) as secondTrial
+        from jx_thesis_defense_quality
+        where annual=#{annual}
+        <if test="studentType != null and studentType != ''">
+            AND student_type=#{studentType}
+        </if>
+        group by academy_code,academy_short order by schoolBlindNotPass desc
+    </select>
+
+    <!--研究生论文:总的论文及答辩质量-->
+    <select id="thesisDefenseQualityAll" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select
+        round(sum(if(censorship_type='校盲审' and is_censorship='1',1,0))/sum(if(censorship_type='校盲审',1,0))*100,2) as schoolBlindPass, -- 论文校盲审通过率
+        round(sum(if(censorship_type='院盲审' and is_censorship='1',1,0))/sum(if(censorship_type='院盲审',1,0))*100,2) as academyBlindPass, -- 论文院盲审通过率
+        round(sum(if(is_censorship='1',1,0))/count(1)*100,2) as onePassRatio, -- 答辩一次通过率
+        round(sum(if(is_censorship='0',1,0))/count(1)*100,2) as secondTrial -- 二次送审比例
+        from jx_thesis_defense_quality
+        where annual=#{annual}
+        <if test="studentType != null and studentType != ''">
+            AND student_type=#{studentType}
+        </if>
+    </select>
+
+    <!--研究生论文:优秀研究生论文excellent_type as one,excellent_doctor_type as two,thesis_number as value-->
+    <select id="listExcellentPostgraduateThesis" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select excellent_type as name,thesis_number as value
+        from jx_excellent_postgraduate_thesis
+        where annual=#{annual}
+    </select>
+
+    <!--研究生论文:学术论文成果分布-->
+    <select id="listAcademicPaperAchievements" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select type_name as name,sci_number as sciNumber,degree_sci_number as degreeNumber
+        from jx_academic_paper_achievements
+        where annual=#{annual} and choice_type=#{type} order by sci_number+0 desc
+    </select>
+
+    <resultMap id="masterThesisExcellentMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--研究生论文：论文送审优良比例(博士/硕士)-->
+    <select id="masterThesisExcellent" resultMap="masterThesisExcellentMap">
+        SELECT
+            t.academy_code AS academyCode, -- 学院编号
+            t.academy_name AS academyName, -- 学院名称
+            type AS type, -- 评价类型：优秀，良好，一般，较差
+            COUNT(*) AS num -- 人数
+        FROM jx_thesis_censorship_type t
+        WHERE t.annual = #{annual}
+        <if test="studentType != null and studentType != ''">
+            AND t.student_type=#{studentType}
+        </if>
+        GROUP BY t.academy_code,t.academy_name,type
+        UNION
+        SELECT
+            t.academy_code AS academyCode, -- 学院编号
+            t.academy_name AS academyName, -- 学院名称
+            '优良率' AS type,
+            ROUND(SUM(CASE WHEN type='优秀' OR type='良好' THEN 1 ELSE 0 END)/COUNT(*)*100,2) AS rate -- 优良率
+        FROM jx_thesis_censorship_type t
+        WHERE t.annual = #{annual}
+        <if test="studentType != null and studentType != ''">
+            AND t.student_type=#{studentType}
+        </if>
+        GROUP BY t.academy_code,t.academy_name
+    </select>
+
+    <!--研究生学位授予:学位授予情况-->
+    <select id="listPostgraduateDegreeAward" parameterType="TeachingProcessREQ" resultType="java.util.Map">
+        select academy_code,academy_short as name,
+        degree_award_number as degreeAwardNumber,
+        not_degree_number as notDegreeNumber,
+        round(degree_award_number/(degree_award_number+not_degree_number)*100,2) as ratio
+        from jx_postgraduate_degree_award
+        where annual=#{annual} and postgraduate_type=#{type} order by degreeAwardNumber+0 desc
+    </select>
+
+    <!--本科生/研究生评教：本科生学生评教-->
+    <select id="undergraduateStuEva" resultType="map">
+        SELECT
+            type AS type, -- 评价类型：优秀，良好，一般，较差
+            SUM(num) AS num -- 人数
+        FROM jx_undergraduate_evaluation_teaching
+        WHERE semester_year = #{semesterYear}
+        <if test="studentType != null and studentType != ''">
+            AND student_type=#{studentType}
+        </if>
+        GROUP BY type
+    </select>
+
+    <resultMap id="undergraduateAcaStuEvaMap" type="map">
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+    <!--本科生/研究生评教：本科生学院学生评价-->
+    <select id="undergraduateAcaStuEva" resultMap="undergraduateAcaStuEvaMap">
+        SELECT
+            academy_name AS academyName, -- 学院名称
+            type AS type, -- 评价类型：优秀，良好，一般，较差
+            SUM(num) AS num -- 人数
+        FROM jx_undergraduate_evaluation_teaching
+        WHERE semester_year = #{semesterYear}
+        <if test="studentType != null and studentType != ''">
+            AND student_type=#{studentType}
+        </if>
+        GROUP BY academy_name,type
+        UNION
+        SELECT
+            academy_name AS academyName, -- 学院名称
+            '优良率' AS type,
+            ROUND(SUM(CASE WHEN type='优秀' OR type='良好' THEN num ELSE 0 END)/SUM(num)*100,2) AS rate -- 优良率
+        FROM jx_undergraduate_evaluation_teaching
+        WHERE semester_year = #{semesterYear}
+        <if test="studentType != null and studentType != ''">
+            AND student_type=#{studentType}
+        </if>
+        GROUP BY academy_name
+    </select>
+
+    <!--研究生评教：学生评教箱线图-->
+    <select id="academicAndScoreBoxLine" resultType="map">
+        SELECT
+            academy_name AS academyName, -- 学院名称
+            MIN(score) AS min, -- 最小值
+            AVG(score) AS avg, -- 平均值
+            MAX(score) AS max, -- 最大值
+            GROUP_CONCAT(score) AS stringScore  -- 该学院下所有分数
+        FROM jx_master_evaluation
+		WHERE semester_year=#{semesterYear}
+        GROUP BY academy_name order by academy_code
+    </select>
+</mapper>

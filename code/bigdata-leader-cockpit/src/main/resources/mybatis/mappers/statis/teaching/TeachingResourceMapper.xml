@@ -1,0 +1,684 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.teaching.TeachingResourceMapper">
+
+    <!--师资趋势-->
+    <select id="teacherTrend" resultType="map">
+        SELECT
+            annual AS annual, -- 年度
+            full_time AS fullTime, -- 专任教师人数
+            doctor AS doctor, -- 博士学位人数
+            oversea AS oversea, -- 海外留学人数
+            doctor_rate AS doctorRate, -- 博士占比
+            oversea_rate AS overseaRate -- 海外占比
+        FROM
+            jx_teacher_trend
+        ORDER BY annual
+    </select>
+
+    <resultMap id="academyTeachingSitMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+        </collection>
+    </resultMap>
+
+    <!-- 教学单位师资情况 -->
+    <select id="academyTeachingSituation"  resultMap="academyTeachingSitMap">
+        -- 聘任类型
+        SELECT
+            academy_code AS academyCode,
+            academy_name AS academyName,
+            appointment_type AS type,
+            COUNT(*) AS num
+        FROM
+            rs_teacher_info
+        WHERE
+            academy_code IS NOT NULL
+        GROUP BY
+            academy_code,academy_name,appointment_type
+        UNION
+        -- 职称数目
+        SELECT
+            academy_code AS academyCode,
+            academy_name AS academyName,
+            title AS title,
+            COUNT(*) AS num
+        FROM
+            rs_teacher_info
+        WHERE
+            title IN ('教授','副教授','讲师') AND academy_code IS NOT NULL
+        GROUP BY
+            academy_code,academy_name,title
+        UNION
+        -- 占比
+        SELECT
+            a.academy_code AS academyCode,
+            a.academy_name AS academyName,
+            type AS type,
+            ROUND(num / total*100, 2) AS rate
+        FROM (SELECT
+                        academy_code,
+                        academy_name,
+                        '教授占比' AS type,
+                        COUNT(*) AS num
+                    FROM
+                        rs_teacher_info
+                    WHERE
+                        title = '教授' AND academy_code IS NOT NULL
+                    GROUP BY
+                        academy_code,academy_name
+                    UNION
+                    -- 博士
+                    SELECT
+                        academy_code,
+                        academy_name,
+                        '博士占比' AS type,
+                        COUNT(*) AS num
+                    FROM
+                        rs_teacher_info
+                    WHERE
+                        education = '博士研究生毕业' AND academy_code IS NOT NULL
+                    GROUP BY
+                        academy_code,academy_name
+                    UNION
+                    -- 海外教师
+                    SELECT
+                        academy_code,
+                        academy_name,
+                        '海外教师占比' AS type,
+                        COUNT(*) AS num
+                    FROM
+                        rs_teacher_info
+                    WHERE
+                        academy_margin = '境外学校' AND academy_code IS NOT NULL
+                    GROUP BY
+                        academy_code,academy_name
+                    ) a JOIN
+                (SELECT
+                    academy_code,
+                    academy_name,
+                    COUNT(*) AS total
+                FROM
+                    rs_teacher_info
+                WHERE
+                    academy_code IS NOT NULL
+                GROUP BY
+                    academy_code,academy_name) b ON a.academy_code=b.academy_code
+    </select>
+
+    <resultMap id="academyTeacherTypeMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <result column="num" jdbcType="VARCHAR" property="num" />
+        <collection property="list" ofType="map" column="academyCode" select="getTeacherType" javaType="ArrayList">
+        </collection>
+    </resultMap>
+    <!--各学院聘用老师类型 -->
+    <select id="academyTeacherType" resultMap="academyTeacherTypeMap">
+        SELECT
+            academy_code AS academyCode,
+            academy_name AS academyName,
+            COUNT(*) AS num
+        FROM
+            rs_teacher_info
+        GROUP BY
+            academy_code,academy_name
+        ORDER BY num DESC
+    </select>
+    <!--单个学院学生类型人数-->
+    <select id="getTeacherType" resultType="map">
+        SELECT
+            appointment_type AS type, -- 教师聘任类型
+            COUNT(*) AS num -- 人数
+        FROM rs_teacher_info
+		WHERE academy_code=#{academyCode}
+        GROUP BY appointment_type
+        ORDER BY num DESC
+    </select>
+
+    <!--学院专任教师数量-->
+    <select id="fullTeacherNum" resultType="int">
+        SELECT
+                COUNT(*) AS num
+        FROM
+                rs_teacher_info
+        WHERE
+                appointment_type = '专任教师'
+        <if test="academyCode != null and academyCode!=''" >
+            AND academy_code = #{academyCode}
+        </if>
+    </select>
+
+    <!--学院教师职称结构-->
+    <select id="titleNum" resultType="map">
+        SELECT
+                job_title AS type,
+                COUNT(*) AS num
+        FROM
+                rs_teacher_info
+        WHERE
+                appointment_type = '专任教师'
+            <if test="academyCode != null and academyCode!=''" >
+                AND academy_code = #{academyCode}
+            </if>
+        GROUP BY job_title
+    </select>
+
+    <!--学院学历结构-->
+    <select id="educationNum" resultType="map">
+        SELECT
+                education AS type,
+                COUNT(*) AS num
+        FROM
+                rs_teacher_info
+        WHERE
+                appointment_type = '专任教师'
+            <if test="academyCode != null and academyCode!=''" >
+                AND academy_code = #{academyCode}
+            </if>
+        GROUP BY education
+    </select>
+
+    <!--学院年龄结构-->
+    <select id="ageNum" resultType="map">
+        SELECT age AS type,COUNT(*) AS num
+        FROM (SELECT
+                CASE WHEN t.age &lt;=35 THEN '35岁以下'
+                    WHEN t.age &gt;= 36 AND t.age &lt;= 45 THEN '36~45岁'
+                    WHEN t.age &gt;= 46 AND t.age &lt;= 55 THEN '46~55岁'
+                    WHEN t.age &gt;= 56 THEN '56岁以上'
+                    ELSE '未知'
+                END AS age
+            FROM rs_teacher_info t
+        WHERE
+                t.appointment_type = '专任教师'
+            <if test="academyCode != null and academyCode!=''" >
+                AND t.academy_code = #{academyCode}
+            </if>) a
+        GROUP BY age
+    </select>
+
+    <!--学缘结构-->
+    <select id="marginNum" resultType="map">
+        SELECT
+                academy_margin AS type,
+                COUNT(*) AS num
+        FROM
+                rs_teacher_info
+        WHERE
+                appointment_type = '专任教师'
+            <if test="academyCode != null and academyCode!=''" >
+                AND academy_code = #{academyCode}
+            </if>
+        GROUP BY academy_margin
+    </select>
+
+
+    <resultMap id="graduateTeaDisMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="num" jdbcType="VARCHAR" property="num" />
+            <result column="rate" jdbcType="VARCHAR" property="rate" />
+        </collection>
+    </resultMap>
+    <!--研究生导师分布情况-->
+    <select id="graduateTeaDis" resultMap="graduateTeaDisMap">
+        SELECT
+            ifnull(academy_code,'未知') AS academyCode, -- 学院代码
+            ifnull(academy_name,'未知') AS academyName, -- 学院名称
+            '博士' AS type,
+            COUNT(*) AS num, -- 人数
+            ROUND(SUM(doctor_number)/COUNT(*),2) AS rate -- 占比
+        FROM
+            jx_graduate_teacher
+        WHERE
+            doctor_teacher = '1'
+        GROUP BY
+            academy_code,academy_name
+        UNION
+        SELECT
+            ifnull(academy_code,'未知') AS academyCode, -- 学院代码
+            ifnull(academy_name,'未知') AS academyName, -- 学院名称
+            '硕士' AS type,
+            COUNT(*) AS num, -- 人数
+            ROUND(SUM(master_number)/COUNT(*),2) AS rate -- 占比
+        FROM
+            jx_graduate_teacher
+        WHERE
+            master_teacher = '1'
+        GROUP BY
+            academy_code,academy_name order by if(academyName='未知',0,num) desc
+    </select>
+
+    <!--研究生职称结构-->
+    <select id="graduateJob" resultType="map">
+        SELECT
+                job AS type,
+                COUNT(*) AS num
+        FROM
+                jx_graduate_teacher
+        WHERE
+                academy_code = #{academyCode}
+        GROUP BY job
+    </select>
+
+    <!--研究生年龄结构-->
+    <select id="graduateAge" resultType="map">
+        SELECT type,COUNT(*) AS num
+        FROM (SELECT
+                CASE WHEN t.age &lt;=35 THEN '35岁以下'
+                WHEN t.age &gt;= 36 AND t.age &lt;= 45 THEN '36~45岁'
+                WHEN t.age &gt;= 46 AND t.age &lt;= 55 THEN '46~55岁'
+                WHEN t.age &gt;= 56 THEN '56岁以上'
+                END AS type
+            FROM jx_graduate_teacher t
+        WHERE t.academy_code = #{academyCode}) a
+        GROUP BY type
+    </select>
+
+    <!--研究生学历结构-->
+    <select id="graduateEducation" resultType="map">
+        SELECT
+                education AS type,
+                COUNT(*) AS num
+        FROM
+                jx_graduate_teacher
+        WHERE
+                academy_code = #{academyCode}
+        GROUP BY education
+    </select>
+
+    <!--研究生性别结构-->
+    <select id="graduateSex" resultType="map">
+        SELECT
+                sex AS type,
+                COUNT(*) AS num
+        FROM
+                jx_graduate_teacher
+        WHERE
+                academy_code = #{academyCode}
+        GROUP BY sex
+    </select>
+
+    <!--研究生导师指导学生情况-->
+    <select id="graduateTeacherPage" resultType="map">
+        SELECT
+                teacher_no AS teacherNo, -- 工号
+                teacher_name AS teacherName, -- 姓名
+                academy_name AS academyName, -- 学院
+                education AS education, -- 学位学历
+                job AS job, -- 职称
+                total_number AS totalNum, -- 学生总数
+                master_number AS masterNum, -- 硕士生
+                doctor_number AS doctorNum -- 博士生
+        FROM
+                jx_graduate_teacher
+        <where>
+            <if test="academyCode != null and academyCode!=''" >
+                AND academy_code = #{academyCode}
+            </if>
+            <if test="noOrName != null and noOrName!=''" >
+                AND (teacher_no LIKE CONCAT('%', #{noOrName},'%') OR teacher_name LIKE CONCAT('%', #{noOrName},'%'))
+            </if>
+        </where>
+        order by teacher_no DESC
+    </select>
+
+    <!--近三年导师指导学生人数情况-->
+    <select id="listTutorGuideStudent" resultType="map">
+        <!--(select '1' as annual,type as name,tutor_number as value
+        from jx_tutor_guide_student
+        where educate_gradation=#{type} and annual=year(CURDATE())-1
+        order by (case when type like '%小于%' then 0 else 1 end))
+        union all
+        (select '2' as annual,type as name,tutor_number as value
+        from jx_tutor_guide_student
+        where educate_gradation=#{type} and annual=year(CURDATE())-2
+        order by (case when type like '%小于%' then 0 else 1 end))
+        union all
+        (select '3' as annual,type as name,tutor_number as value
+        from jx_tutor_guide_student
+        where educate_gradation=#{type} and annual=year(CURDATE())-3
+        order by (case when type like '%小于%' then 0 else 1 end))-->
+        select annual as annual,type as name,tutor_number as value
+        from jx_tutor_guide_student
+        where educate_gradation='硕士' and
+        (case when month(CURRENT_DATE)&gt;=8 then annual&gt;year(CURRENT_DATE)-3 when month(CURRENT_DATE)&lt;8 then annual&gt;=year(CURRENT_DATE)-3 else null end)
+        order by annual,if(type like '%=2',0,type)
+    </select>
+
+    <resultMap id="undergraduateAcademyMajorMap" type="map">
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="majorName" jdbcType="VARCHAR" property="majorName" />
+            <result column="countryCharacteristic" jdbcType="VARCHAR" property="countryCharacteristic" />
+            <result column="countryReform" jdbcType="VARCHAR" property="countryReform" />
+            <result column="provinceAdvantage" jdbcType="VARCHAR" property="provinceAdvantage" />
+            <result column="talentPlan" jdbcType="VARCHAR" property="talentPlan" />
+        </collection>
+    </resultMap>
+    <!--本科生专业分布（学院-专业）-->
+    <select id="undergraduateAcademyMajor" resultMap="undergraduateAcademyMajorMap">
+        SELECT
+            academy_name AS academyName, -- 学院名称
+            major_name AS majorName, -- 专业名称
+            country_characteristic AS countryCharacteristic, -- 国家特色专业：1 是，0 不是
+            country_reform AS countryReform, -- 国家综合改革试点专业：1 是，0 不是
+            province_advantage AS provinceAdvantage, -- 省部级优势专业：1 是，0 不是
+            talent_plan AS talentPlan -- “卓越工程人才”计划专业：1 是，0 不是
+        FROM
+            jx_undergraduate_academy_major
+    </select>
+    <!--本科生专业分布统计信息-->
+    <select id="underAcaMajSta" resultType="map">
+        SELECT
+            COUNT(DISTINCT academy_name) AS academyNum, -- 学院数量
+            COUNT(DISTINCT major_name) AS majorNum, -- 专业数量
+			COUNT(DISTINCT CASE WHEN is_add=1 THEN major_name END) AS addNum, -- 新增专业数量
+            SUM(country_characteristic) AS countryCharacteristic, -- 国家特色专业数量
+            SUM(country_reform) AS countryReform, -- 国家综合改革试点专业数量
+            SUM(province_advantage) AS provinceAdvantage, -- 省部级优势专业数量
+            SUM(talent_plan) AS talentPlan, -- “卓越工程人才”计划专业数量
+            ROUND(SUM(country_characteristic)/COUNT(*)*100,2) AS countryCharacteristicRate, -- 国家特色专业占比
+            ROUND(SUM(country_reform)/COUNT(*)*100,2) AS countryReformRate, -- 国家综合改革试点专业占比
+            ROUND(SUM(province_advantage)/COUNT(*)*100,2) AS provinceAdvantageRate, -- 省部级优势专业占比
+            ROUND(SUM(talent_plan)/COUNT(*)*100,2) AS talentPlanRate -- “卓越工程人才”计划专业占比
+        FROM
+            jx_undergraduate_academy_major
+    </select>
+
+
+    <resultMap id="undergraduateLargeMajorMap" type="map">
+        <result column="largeMajorName" jdbcType="VARCHAR" property="largeMajorName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="majorName" jdbcType="VARCHAR" property="majorName" />
+            <result column="countryCharacteristic" jdbcType="VARCHAR" property="countryCharacteristic" />
+            <result column="countryReform" jdbcType="VARCHAR" property="countryReform" />
+            <result column="provinceAdvantage" jdbcType="VARCHAR" property="provinceAdvantage" />
+            <result column="talentPlan" jdbcType="VARCHAR" property="talentPlan" />
+        </collection>
+    </resultMap>
+    <!--本科生专业大类分布（专业大类-专业）-->
+    <select id="undergraduateLargeMajor" resultMap="undergraduateLargeMajorMap">
+        SELECT
+            large_major_name AS largeMajorName, -- 专业大类名称
+            academy_name AS majorName, -- 学院名称
+            country_characteristic AS countryCharacteristic, -- 国家特色专业：1 是，0 不是
+            country_reform AS countryReform, -- 国家综合改革试点专业：1 是，0 不是
+            province_advantage AS provinceAdvantage, -- 省部级优势专业：1 是，0 不是
+            talent_plan AS talentPlan -- “卓越工程人才”计划专业：1 是，0 不是
+        FROM
+            jx_undergraduate_large_major
+    </select>
+    <!--本科生专业大类分布统计信息-->
+    <select id="underLarMajSta" resultType="map">
+        SELECT
+            COUNT(DISTINCT large_major_name) AS largeMajorNum, -- 大类数量
+            COUNT(DISTINCT academy_name) AS academyNum, -- 学院数量
+            COUNT(DISTINCT CASE WHEN is_add=1 THEN large_major_name END) AS addNum, -- 新增大类数量
+            SUM(country_characteristic) AS countryCharacteristic, -- 国家特色专业数量
+            SUM(country_reform) AS countryReform, -- 国家综合改革试点专业数量
+            SUM(province_advantage) AS provinceAdvantage, -- 省部级优势专业数量
+            SUM(talent_plan) AS talentPlan, -- “卓越工程人才”计划专业数量
+            ROUND(SUM(country_characteristic)/COUNT(*)*100,2) AS countryCharacteristicRate, -- 国家特色专业占比
+            ROUND(SUM(country_reform)/COUNT(*)*100,2), -- 国家综合改革试点专业占比
+            ROUND(SUM(province_advantage)/COUNT(*)*100,2) AS provinceAdvantageRate, -- 省部级优势专业占比
+            ROUND(SUM(talent_plan)/COUNT(*)*100,2) AS talentPlanRate -- “卓越工程人才”计划专业占比
+        FROM
+            jx_undergraduate_large_major
+    </select>
+
+    <resultMap id="graduateAcademySubjectMap" type="map">
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="firstList" ofType="map" javaType="ArrayList">
+            <result column="subjectName" jdbcType="VARCHAR" property="subjectName" />
+            <collection property="secondList" ofType="map" javaType="ArrayList">
+                <result column="secondSubjectName" jdbcType="VARCHAR" property="secondSubjectName" />
+                <result column="doctorOne" jdbcType="VARCHAR" property="doctorOne" />
+                <result column="doctorTwo" jdbcType="VARCHAR" property="doctorTwo" />
+                <result column="masterOne" jdbcType="VARCHAR" property="masterOne" />
+                <result column="masterTwo" jdbcType="VARCHAR" property="masterTwo" />
+            </collection>
+        </collection>
+    </resultMap>
+    <!--研究生学科分布（学院-学科）-->
+    <select id="graduateAcademySubject" resultMap="graduateAcademySubjectMap">
+        SELECT
+            academy_name AS academyName, -- 学院名称
+            subject_name AS subjectName, -- 一级学科名称
+            second_subject_name AS secondSubjectName, -- 二级学科名称
+            doctor_one AS doctorOne, -- 博士学位授权一级学科：1 是，0 不是
+            doctor_two AS doctorTwo, -- 博士学位授权二级学科：1 是，0 不是
+            master_one AS masterOne, -- 硕士学位授权一级学科：1 是，0 不是
+            master_two AS masterTwo -- 硕士学位授权二级学科：1 是，0 不是
+        FROM
+            jx_graduate_academy_subject
+    </select>
+    <!--研究生学科分布统计信息-->
+    <select id="graduateAcaSubSta" resultType="map">
+        SELECT
+            COUNT(DISTINCT academy_name) AS academyNum, -- 学院数量
+            COUNT(DISTINCT subject_name) AS subjectNum, -- 学科数量
+			COUNT(DISTINCT CASE WHEN is_add=1 THEN subject_name END) AS addNum, -- 新增学科数量
+            SUM(doctor_one) AS doctorOne, -- 博士学位授权一级学科数量
+            SUM(doctor_two) AS doctorTwo, -- 博士学位授权二级学科数量
+            SUM(master_one) AS masterOne, -- 硕士学位授权一级学科数量
+            SUM(master_two) AS masterTwo, -- 硕士学位授权二级学科数量
+            ROUND(SUM(doctor_one)/COUNT(*)*100,2) AS doctorOneRate, -- 博士学位授权一级学科占比
+            ROUND(SUM(doctor_two)/COUNT(*)*100,2) AS doctorTwoRate, -- 博士学位授权二级学科占比
+            ROUND(SUM(master_one)/COUNT(*)*100,2) AS masterOneRate, -- 硕士学位授权一级学科占比
+            ROUND(SUM(master_two)/COUNT(*)*100,2) AS masterTwoRate -- 硕士学位授权二级学科占比
+        FROM
+            jx_graduate_academy_subject
+    </select>
+
+    <resultMap id="graduateAcademyMajorMap" type="map">
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="majorName" jdbcType="VARCHAR" property="majorName" />
+            <result column="doctorOne" jdbcType="VARCHAR" property="doctorOne" />
+            <result column="doctorTwo" jdbcType="VARCHAR" property="doctorTwo" />
+            <result column="masterOne" jdbcType="VARCHAR" property="masterOne" />
+            <result column="masterTwo" jdbcType="VARCHAR" property="masterTwo" />
+        </collection>
+    </resultMap>
+    <!--研究生学科分布（学院-专业）-->
+    <select id="graduateAcademyMajor" resultMap="graduateAcademyMajorMap">
+        SELECT
+            academy_name AS academyName, -- 学院名称
+            major_name AS majorName, -- 专业名称
+            doctor_one AS doctorOne, -- 博士学位授权一级学科：1 是，0 不是
+            doctor_two AS doctorTwo, -- 博士学位授权二级学科：1 是，0 不是
+            master_one AS masterOne, -- 硕士学位授权一级学科：1 是，0 不是
+            master_two AS masterTwo -- 硕士学位授权二级学科：1 是，0 不是
+        FROM
+            jx_graduate_academy_major
+    </select>
+    <!--研究生学科分布（学院-专业）统计信息-->
+    <select id="graduateAcaMajSta" resultType="map">
+        SELECT
+            COUNT(DISTINCT academy_name) AS academyNum, -- 学院数量
+            COUNT(DISTINCT major_name) AS majorNum, -- 专业数量
+			COUNT(DISTINCT CASE WHEN is_add=1 THEN major_name END) AS addNum, -- 新增专业数量
+            SUM(doctor_one) AS doctorOne, -- 博士学位授权一级学科数量
+            SUM(doctor_two) AS doctorTwo, -- 博士学位授权二级学科数量
+            SUM(master_one) AS masterOne, -- 硕士学位授权一级学科数量
+            SUM(master_two) AS masterTwo, -- 硕士学位授权二级学科数量
+            ROUND(SUM(doctor_one)/COUNT(*)*100,2) AS doctorOneRate, -- 博士学位授权一级学科占比
+            ROUND(SUM(doctor_two)/COUNT(*)*100,2) AS doctorTwoRate, -- 博士学位授权二级学科占比
+            ROUND(SUM(master_one)/COUNT(*)*100,2) AS masterOneRate, -- 硕士学位授权一级学科占比
+            ROUND(SUM(master_two)/COUNT(*)*100,2) AS masterTwoRate -- 硕士学位授权二级学科占比
+        FROM
+            jx_graduate_academy_major
+    </select>
+    <!--本科课程结构分布-->
+    <select id="undergraduateCourseStruct" resultType="map">
+        SELECT
+            annual AS annual, -- 年度
+            common AS common, -- 通识通修课程
+            major AS major, -- 学科专业课程
+            quality AS quality, -- 综合素养课程
+            practice AS practice -- 综合实践课程
+        FROM
+            jx_undergraduate_course_struct
+        ORDER BY annual
+        LIMIT 5
+    </select>
+
+    <!--全校开设课程-->
+    <select id="undergraduateOpenCourse" resultType="map">
+        SELECT
+            type AS type, -- 课程类型：公共必修课，公共选修课，专业课
+            course AS course, -- 课程门数
+            course_number AS courseNumber, -- 课程门次数
+            bilingual_courses AS bilingualCourses, -- 双语课程门数
+            average_hours AS averageHours, -- 平均学时数
+            average_class AS averageClass -- 平均班规模
+        FROM
+            jx_undergraduate_open_course
+        WHERE
+            left(annual,4) = #{annual}
+    </select>
+
+    <!--优质课程资源建设-->
+    <select id="undergraduateQualityCourse" resultType="map">
+        SELECT
+            type AS type, -- 课程类型
+            number AS number -- 数目
+        FROM
+            jx_quality_course
+    </select>
+
+    <!--国家虚拟仿真实验教学项目-->
+    <select id="undergraduateFicCouPage" resultType="map">
+        SELECT
+            name AS name, -- 课程名称
+            charge AS charge, -- 课程负责人
+            academy_name AS academyName, -- 学院名称
+            type AS type, -- 分类
+            approval_date AS approvalDate -- 审批日期
+        FROM
+            jx_fictitious_course
+    </select>
+
+    <!--国家精品在线开放课程-->
+    <select id="undergraduateBouCouPage" resultType="map">
+        SELECT
+            name AS name, -- 课程名称
+            charge AS charge, -- 课程负责人
+            academy_name AS academyName, -- 学院名称
+            course_platform AS coursePlatform, -- 开课平台
+            approval_date AS approvalDate -- 审批日期
+        FROM
+            jx_boutique_course
+    </select>
+
+    <!--在线开放课程表-->
+    <select id="undergraduateOnlineCourse" resultType="map">
+        SELECT
+            annual AS annual, -- 年度
+            country AS country, -- 国家级
+            province AS province, -- 省级
+            school AS school -- 校级
+        FROM
+            jx_online_course
+        ORDER BY annual
+    </select>
+
+    <!--最近研究生课程结构分布-->
+    <select id="graduateLatestCouStr" parameterType="GraduateCourseREQ" resultType="map">
+        SELECT course_type AS type,sum(number) as number
+        FROM jx_postgraduate_course_info
+        where annual=#{annual}
+        group by course_type order by number desc
+    </select>
+
+    <resultMap id="graduateCourseStrMap" type="map">
+        <result column="annual" jdbcType="VARCHAR" property="annual" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="number" jdbcType="VARCHAR" property="number" />
+        </collection>
+    </resultMap>
+    <!--历年研究生课程结构分布-->
+    <select id="graduateCourseStr" resultMap="graduateCourseStrMap">
+        SELECT annual,course_type AS type,sum(number) as number
+        FROM jx_postgraduate_course_info
+        group by annual,course_type order by annual,number desc
+    </select>
+
+    <!--研究生课程结构-图例-->
+    <select id="getGraduateCourseLegend" parameterType="GraduateCourseREQ" resultType="string">
+        select course_type as name
+        from jx_postgraduate_course_info
+        <where>
+            <if test="annual != null and annual!=''">
+                AND annual=#{annual} AND educate_gradation!=#{type}
+            </if>
+        </where>
+        group by course_type order by SUM(number) desc
+    </select>
+
+    <resultMap id="graduateOneCourseMap" type="map">
+        <result column="academyCode" jdbcType="VARCHAR" property="academyCode" />
+        <result column="academyName" jdbcType="VARCHAR" property="academyName" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="number" jdbcType="VARCHAR" property="number" />
+        </collection>
+    </resultMap>
+    <!--研究生学院课程分类-->
+    <select id="graduateOneCourse" parameterType="GraduateCourseREQ" resultMap="graduateOneCourseMap">
+        <!--SELECT
+            subject_code AS subjectCode, &#45;&#45; 学科代码
+            subject_name AS subjectName, &#45;&#45; 学科名称
+            public_number AS publicNumber, &#45;&#45; 公共课数目
+            basic_number AS basicNumber, &#45;&#45; 理论基础课数目
+            major_basic_number AS majorBasicNumber, &#45;&#45; 专业基础课数目
+            major_number AS majorNumber, &#45;&#45; 专业课数目
+            qualityr_number AS qualityrNumber, &#45;&#45; 综合素质课数目
+            front_number AS frontNumber, &#45;&#45; 学科前沿课数目
+            practice_number AS practiceNumber &#45;&#45; 创新实践课数目
+        FROM
+            jx_graduate_one_course
+        WHERE
+            type = #{type}-->
+        SELECT academy_code as academyCode,academy_name as academyName,course_type as type,number
+        FROM jx_postgraduate_course_info
+        where annual=#{annual} and educate_gradation!=#{type}
+        order by academy_code
+    </select>
+
+    <!--研究生累计优质课程-->
+    <select id="graduateTotalQualityCou" resultType="map">
+        SELECT
+        type AS type,
+        SUM(number) AS number
+        FROM
+        jx_graduate_quality_course
+        GROUP BY type
+    </select>
+
+    <resultMap id="graduateQualityCourseMap" type="map">
+        <result column="annual" jdbcType="VARCHAR" property="annual" />
+        <collection property="list" ofType="map" javaType="ArrayList">
+            <result column="type" jdbcType="VARCHAR" property="type" />
+            <result column="number" jdbcType="VARCHAR" property="number" />
+        </collection>
+    </resultMap>
+    <!--历年研究生优质课程-->
+    <select id="graduateQualityCourse" resultMap="graduateQualityCourseMap">
+        SELECT
+        annual AS annual,
+        type AS type,
+        number AS number
+        FROM
+        jx_graduate_quality_course
+        ORDER BY annual
+    </select>
+</mapper>

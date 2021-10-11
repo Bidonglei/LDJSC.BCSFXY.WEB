@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.diagnosisTeaching.SunmnetClassInfoDao" >
+    <select id="queryClassByMajorNo" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryClassByMajorNoModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QueryClassByMajorNoRequest" >
+		select
+        `code` as className,`name` as className
+        from
+        basic_class_info ci
+        where ci.major_code = #{majorCode,jdbcType=VARCHAR}
+        ORDER BY grade DESC
+    </select>
+
+    <select id="queryFirstDept" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryDeptModel" >
+		select
+		  `code` as deptCode,`name` as deptName
+		from
+		basic_department_info
+		where status = 0 and `level` = 2
+    </select>
+    
+    <select id="querySecondDeptByFirstDeptNo" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryDeptModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QuerySecondDeptByFirstDeptNoRequest">
+        select
+		  `code` as deptCode,`name` as deptName
+		from
+		basic_department_info
+		where status = 0 and parent_code = #{parentsNo,jdbcType=VARCHAR}
+    </select>
+
+
+    <select id="querySecondDept" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QueryDeptModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QuerySecondDeptByFirstDeptNoRequest">
+		select
+		  `code` as deptCode,`name` as deptName
+		from
+		basic_department_info
+		where status = 0 and `level` = 3
+		ORDER by `code`
+    </select>
+</mapper>

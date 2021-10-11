@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.web.mapper.personnel.TrainingEvaluationMapper">
+
+
+    <!--考核列表-获取最后一年数据计算-->
+    <select id="listAssessInfoByName" resultType="java.util.Map">
+        SELECT teacher_no as teacherNo,teacher_name as teacherName,department_name as departmentName,assessment_type as assessmentType,COUNT(1) num FROM rs_teacher_assessment
+        WHERE (assessment_date>(SELECT MAX(assessment_date) from rs_teacher_assessment LIMIT 1)-#{yearNum})
+        AND assessment_type=#{type}
+        GROUP BY teacher_no,assessment_type HAVING num=#{yearNum}
+    </select>
+
+    <!--考核年度-->
+    <select id="getAssessmentTypeNum" parameterType="com.sunmnet.bigdata.web.model.request.personnel.AssessInfoTypeREQ" resultType="java.util.Map">
+        select assessment_type as name,count(1) as value from rs_teacher_assessment
+        where assessment_type is not null
+        <if test="departmentType !=null and departmentType != ''">
+            and department_type=#{departmentType}
+        </if>
+        <if test="departmentName !=null and departmentName != ''">
+            and department_name=#{departmentName}
+        </if>
+        and assessment_date=#{assessmentDate}
+        group by assessment_type
+    </select>
+
+    <!--考核年度-下拉框-->
+    <select id="getAssessmentDepartment" parameterType="String" resultType="java.lang.String">
+        select dict_name as dictName from gg_dict
+        where dict_type=#{dictType}
+    </select>
+
+</mapper>

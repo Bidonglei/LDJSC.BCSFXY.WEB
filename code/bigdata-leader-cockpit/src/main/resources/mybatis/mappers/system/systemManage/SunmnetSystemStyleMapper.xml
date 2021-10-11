@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sunmnet.bigdata.systemManage.dao.systemManage.SunmnetSystemStyleDao" >
+    <resultMap id="BaseResultMap" type="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemStyleEntity" >
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="system_no" property="systemNo" jdbcType="VARCHAR" />
+        <result column="set_position" property="setPosition" jdbcType="VARCHAR" />
+        <result column="img_no" property="imgNo" jdbcType="VARCHAR" />
+        <result column="img_name" property="imgName" jdbcType="VARCHAR" />
+        <result column="img_url" property="imgUrl" jdbcType="LONGVARCHAR" />
+        <result column="apply_status" property="applyStatus" jdbcType="VARCHAR" />
+        <result column="file_status" property="fileStatus" jdbcType="VARCHAR" />
+        <result column="create_time" property="createTime" jdbcType="VARCHAR" />
+        <result column="last_modify_time" property="lastModifyTime" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+        id, system_no, set_position, img_no, img_name, img_url, apply_status, file_status, 
+        create_time, last_modify_time
+    </sql>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_style
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <insert id="insertSelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemStyleEntity" >
+        insert into sunmnet_system_style
+        <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
+            <if test="systemNo != null" >
+                system_no,
+            </if>
+            <if test="setPosition != null" >
+                set_position,
+            </if>
+            <if test="imgNo != null" >
+                img_no,
+            </if>
+            <if test="imgName != null" >
+                img_name,
+            </if>
+            <if test="imgUrl != null" >
+                img_url,
+            </if>
+            <if test="applyStatus != null" >
+                apply_status,
+            </if>
+            <if test="fileStatus != null" >
+                file_status,
+            </if>
+            <if test="createTime != null" >
+                create_time,
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=BIGINT},
+            </if>
+            <if test="systemNo != null" >
+                #{systemNo,jdbcType=VARCHAR},
+            </if>
+            <if test="setPosition != null" >
+                #{setPosition,jdbcType=VARCHAR},
+            </if>
+            <if test="imgNo != null" >
+                #{imgNo,jdbcType=VARCHAR},
+            </if>
+            <if test="imgName != null" >
+                #{imgName,jdbcType=VARCHAR},
+            </if>
+            <if test="imgUrl != null" >
+                #{imgUrl,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="applyStatus != null" >
+                #{applyStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="fileStatus != null" >
+                #{fileStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemStyleEntity" >
+        update sunmnet_system_style
+        <set >
+            <if test="systemNo != null" >
+                system_no = #{systemNo,jdbcType=VARCHAR},
+            </if>
+            <if test="setPosition != null" >
+                set_position = #{setPosition,jdbcType=VARCHAR},
+            </if>
+            <if test="imgNo != null" >
+                img_no = #{imgNo,jdbcType=VARCHAR},
+            </if>
+            <if test="imgName != null" >
+                img_name = #{imgName,jdbcType=VARCHAR},
+            </if>
+            <if test="imgUrl != null" >
+                img_url = #{imgUrl,jdbcType=LONGVARCHAR},
+            </if>
+            <if test="applyStatus != null" >
+                apply_status = #{applyStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="fileStatus != null" >
+                file_status = #{fileStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="createTime != null" >
+                create_time = #{createTime,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifyTime != null" >
+                last_modify_time = #{lastModifyTime,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+        delete from sunmnet_system_style
+        where id = #{id,jdbcType=BIGINT}
+    </delete>
+    
+     <!--根部门系统风格设置 2019-01-21 zfb-->
+	<select id="queryEntityByRequest" resultMap="BaseResultMap" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.UploadImgStatusRequest" >
+        select 
+        <include refid="Base_Column_List" />
+        from sunmnet_system_style
+        where  system_no = #{systemNo,jdbcType=VARCHAR}
+        and set_position = #{setPosition,jdbcType=VARCHAR}
+        and img_no = #{imgNo,jdbcType=VARCHAR}
+    </select>
+    
+     <!--查询所有位置列表2019-01-21 zfb-->
+	<select id="querySystemStyleType" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.QuerySystemStyleListModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QuerySystemStyleListRequest" >
+        select 
+        set_position as setPosition
+        from sunmnet_system_style
+        where  system_no = #{systemNo,jdbcType=VARCHAR}
+        and file_status != 'DELETE'
+        group by setPosition
+    </select>
+    
+     <!--查询所有系统风格图片信息2019-01-21 zfb-->
+	<select id="querySystemStyleList" resultType="com.sunmnet.bigdata.systemManage.base.systemManage.model.SystemImgModel" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.request.QuerySystemStyleListRequest" >
+        select 
+        img_no as imgNo,img_name aS imgName,img_url as imgUrl,apply_status as applyStatus,set_position as setPosition
+        from sunmnet_system_style
+        where  system_no = #{systemNo,jdbcType=VARCHAR} and file_status !='DELETE'
+    </select>
+    
+    <!--查询该系统该位置所有图片状态为未应用2019-01-25 zfb-->
+     <update id="updateApplyStatus" parameterType="com.sunmnet.bigdata.systemManage.base.systemManage.entity.SunmnetSystemStyleEntity" >
+        update sunmnet_system_style
+        set apply_status='WYY'
+        where system_no = #{systemNo,jdbcType=VARCHAR} 
+        and set_position = #{setPosition,jdbcType=VARCHAR}
+    </update>
+
+</mapper>

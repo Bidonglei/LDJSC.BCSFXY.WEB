@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunmnet.bigdata.web.mapper.finance.FinanceMapper">
+
+    <!--资金余额情况表-->
+    <select id="listCapitalBalance" parameterType="FinanceREQ" resultType="java.util.Map">
+        select concat('第',record_week,'周') as name,fund_balance as value
+        from cw_capital_balance
+        where year=#{year}
+    </select>
+
+    <!--资金变动凭证列表-->
+    <select id="listCapitalVoucher" parameterType="CapitalVoucherREQ" resultType="java.util.Map">
+        select transaction_time as transactionTime,voucher_no as voucherNo,transaction_amount as transactionAmount,remark
+        from cw_capital_voucher
+        <where>
+            <if test="beginTime != null and beginTime != ''">
+                and transaction_time between #{beginTime} and #{endTime}
+            </if>
+            <if test="transactionAmount != null and transactionAmount != ''">
+                and transaction_amount&gt;=#{transactionAmount}
+            </if>
+        </where>
+        order by transaction_time desc
+    </select>
+
+    <!--经费预算执行数值-->
+    <select id="getBudgetaryFunds" parameterType="FinanceREQ" resultType="java.util.Map">
+    <!--select a.budgetary_funds as budgetary,
+  ifnull(b.executeAmount,0) as amount,
+  ifnull(round(b.executeAmount/a.budgetary_funds*100,2),0) as implement
+  from cw_budgetary_funds a,
+  (select sum(execute_amount) as executeAmount
+  from cw_budget_execute_progress where year=#{year}) b where year=#{year}-->
+      select ifnull(sum(budget_amount),0) as budgetary,
+      ifnull(sum(execute_amount),0) as amount,
+      ifnull(round(sum(execute_amount)/sum(budget_amount)*100,2),0) as implement
+      from cw_budget_execute_progress
+      where year=#{year}
+</select>
+
+<!--各项目类型预算执行分析-->
+    <select id="listBudgetProjectTypeExecute" parameterType="FinanceREQ" resultType="java.util.Map">
+        select project_type as name,sum(budget_amount) as budget,
+        sum(execute_amount) as executeAmount,
+        round(sum(execute_amount)/sum(budget_amount)*100,2) as implement
+        from cw_budget_execute_progress
+        where year=#{year}
+        group by project_type order by implement desc
+    </select>
+
+    <!--各责任单位预算执行分析-->
+    <select id="listBudgetDepartmentExecute" parameterType="FinanceREQ" resultType="java.util.Map">
+        select department_name as name,sum(budget_amount) as budget,
+        sum(execute_amount) as executeAmount,
+        round(sum(execute_amount)/sum(budget_amount)*100,2) as implement
+        from cw_budget_execute_progress
+        where year=#{year}
+        group by department_name order by implement desc
+    </select>
+
+    <!--预算概况-->
+    <select id="listBudgetDepartmentInfo" parameterType="FinanceREQ" resultType="java.util.Map">
+        select a.department_name as name,a.budget_amount as budget,
+        round(a.budget_amount/b.sumBudget*100,2) as ratio
+        from cw_budget_execute_progress a,
+        (select sum(budget_amount) as sumBudget
+        from cw_budget_execute_progress
+        where year=#{year} and project_type=#{projectType}) b
+        where year=#{year} and project_type=#{projectType}
+        group by a.department_name order by a.budget_amount desc
+    </select>
+
+    <!--执行情况-->
+    <select id="listBudgetImplement" parameterType="FinanceREQ" resultType="java.util.Map">
+        select department_name as name,sum(budget_amount) as budget,
+        sum(execute_amount) as executeAmount,
+        round(sum(execute_amount)/sum(budget_amount)*100,2) as implement
+        from cw_budget_execute_progress
+        where year=#{year} and project_type=#{projectType}
+        group by department_name order by implement desc
+    </select>
+
+    <!--实时收支金额统计值 -->
+    <select id="getRealIncomePayAmount" parameterType="FinanceREQ" resultType="java.util.Map">
+        select (select sum(transaction_amount) as value
+        from cw_real_revenue_expenditure
+        where year=#{year} and income_pay='收入') as income,
+        (select sum(transaction_amount) as value
+        from cw_real_revenue_expenditure
+        where year=#{year} and income_pay='支出') as pay
+    </select>
+
+    <!--实时收支分析收入金额 -->
+    <select id="listRealIncomeAmount" parameterType="FinanceREQ" resultType="java.util.Map">
+        select transaction_type as name,
+        transaction_amount as value,
+        round(transaction_amount/amount*100,2) as ratio
+        from cw_real_revenue_expenditure a,
+        (select sum(transaction_amount) as amount
+        from cw_real_revenue_expenditure
+        where year=#{year} and income_pay='收入') b
+        where year=#{year} and income_pay='收入' order by ratio desc
+    </select>
+
+    <!--实时收支分析支出金额 -->
+    <select id="listRealPayAmount" parameterType="FinanceREQ" resultType="java.util.Map">
+        select transaction_type as one,
+        transaction_type_small as two,
+        transaction_type_two as three,
+        transaction_amount as value
+        from cw_real_revenue_expenditure
+        where year=#{year} and income_pay='支出'
+    </select>
+
+    <!--实时收支分析支出金额列表:总值-->
+    <select id="getSumRealPayAmount" parameterType="FinanceREQ" resultType="java.math.BigDecimal">
+        select sum(transaction_amount) as sumAmount
+        from cw_real_revenue_expenditure
+        where year=#{year} and income_pay='支出'
+    </select>
+
+    <!--近五年收支概况-->
+    <select id="listIncomePayByFiveYear" parameterType="FinanceREQ" resultType="java.util.Map">
+        select year,
+        sum(if(income_pay='收入',transaction_amount,0)) as income,
+        sum(if(income_pay='支出',transaction_amount,0)) as pay
+        from cw_history_revenue_expenditure
+        group by year limit 5
+    </select>
+
+    <!--历史收入结构-->
+    <select id="listHistoryIncomeAmount" parameterType="FinanceREQ" resultType="java.util.Map">
+        <!--select transaction_type as one,
+        transaction_type_small as two,
+        sum(transaction_amount) as value
+        from cw_history_revenue_expenditure
+        where income_pay='收入'
+        <if test="year != '1'.toString()">
+            and year=#{year}
+        </if>
+        group by transaction_type,transaction_type_small
+        order by transaction_type_small desc,value desc-->
+        select transaction_type as name,sum(transaction_amount) as value
+        from cw_history_revenue_expenditure
+        where income_pay='收入'
+        <if test="year != '1'.toString()">
+            and year=#{year}
+        </if>
+        group by transaction_type order by value desc
+    </select>
+
+    <!--历史支出结构-->
+    <select id="listHistoryPayAmount" parameterType="FinanceREQ" resultType="java.util.Map">
+        <!--select transaction_type as name,
+        sum(transaction_amount) as value
+        from cw_history_revenue_expenditure
+        where income_pay='支出'
+        <if test="year != '1'.toString()">
+            and year=#{year}
+        </if>
+        group by transaction_type order by value desc-->
+        select transaction_type as one,
+        transaction_type_small as two,
+        transaction_type_two as three,
+        transaction_amount as value
+        from cw_history_revenue_expenditure
+        where income_pay='支出'
+        <if test="year != '1'.toString()">
+            and year=#{year}
+        </if>
+    </select>
+
+
+
+
+
+
+
+
+
+</mapper>

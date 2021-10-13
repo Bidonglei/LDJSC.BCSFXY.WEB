@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="LDJSC">
+    <output-path>$PROJECT_DIR$/out/artifacts/LDJSC</output-path>
+    <root id="archive" name="LDJSC.jar" />
+  </artifact>
+</component>
